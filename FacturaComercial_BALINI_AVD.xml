@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Transaction xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <GeneralData ref="BALINI" Type="FacturaComercial" Date="2018-11-26" Currency="USD" NCF="B0100000692                        " NCFExpirationDate="2020-11-30" TaxIncluded="false">
+        <PublicAdministration>
+            <DOM TipoIngreso="02" TipoPago="2 - Credito" LinesPerPrintedPage=""/>
+        </PublicAdministration>
+    </GeneralData>
+    <Supplier SupplierID="" Email="" CIF="130348707      " Company="Allard Industries LTD         ,INVERSIONES CORIANDER S.R.L.                                               " Address="AV. WINSTON CHURCHILL,             ,AV. TIRADENTES, ESQ. FANTINO  " City="Santo Domingo    ,Santo Domingo    " PC="" Province="" Country="DOM"/>
+    <Client CIF="131369529  " Email="" Company="Allard Industries LTD         ,INVERSIONES CORIANDER S.R.L.                                               " Address="AV. WINSTON CHURCHILL,             ,AV. TIRADENTES, ESQ. FANTINO  " City="Santo Domingo    ,Santo Domingo    " PC="" Province="" Country="DOM"/>
+    <References>
+        <Reference PORef=""/>
+    </References>
+    <ProductList>
+        <Product SupplierSKU="" EAN="" Item="ALQUILER" Qty="1" MU="" CU="" Total="53668.21" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount Qualifier="Descuento" Type="Comercial" Rate="10.00" Amount="180.00"/>
+                <Discount Qualifier="Descuento" Type="Pronto Pago" Rate="1.00" Amount="18.00"/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="ITBIS" Rate="18.00" Base="1602.00" Amount="288.36"/>
+            </Taxes>
+        </Product>
+    </ProductList>
+    <DueDates>
+        <DueDate PaymentID="Venta a Credito" Amount="48888.36" Date="2019-03-22"/>
+    </DueDates>
+    <TaxSummary>
+        <Tax Type="ITBIS" Rate="18.00" Base="1602.00" Amount="288.36"/>
+        <Tax Type="ITBIS" Rate="16.00" Base="3200.00" Amount="288.36"/>
+    </TaxSummary>
+    <TotalSummary GrossAmount="43800.00" Discounts="198.00" SubTotal="43800.00" Tax="5088.36" Total="48888.36"/>
+</Transaction>

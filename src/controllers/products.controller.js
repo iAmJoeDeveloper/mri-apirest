@@ -175,5 +175,6 @@ export const convertXmlToJson = async (req, res) => {
 	// res.json(result)
 	var result1 = xml2json(xml3, { compact: true, spaces: 4 })
 	var result2 = xml2json(xml3, { compact: false, spaces: 4 })
+
 	res.send(result1)
 }
