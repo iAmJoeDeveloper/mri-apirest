@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<Transaction xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <GeneralData ref="012378" Type="FacturaComercial" Date="2022-1-10" Currency="USD" NCF="B0100015859                        " NCFExpirationDate="2020-11-30" TaxIncluded="false">
+        <PublicAdministration>
+            <DOM TipoIngreso="2 - IngresosFinancieros" TipoPago="2 - Credito" LinesPerPrintedPage=""/>
+        </PublicAdministration>
+    </GeneralData>
+    <Supplier SupplierID="" Email="" CIF="130348707      " Company="Allard Industries LTD         ,INVERSIONES CORIANDER S.R.L.                                               " Address="AV. WINSTON CHURCHILL,             ,AV. TIRADENTES, ESQ. FANTINO  " City="Santo Domingo    ,Santo Domingo    " PC="" Province="" Country="DOM"/>
+    <Client CIF="131369529  " Email="" Company="Allard Industries LTD         ,INVERSIONES CORIANDER S.R.L.                                               " Address="AV. WINSTON CHURCHILL,             ,AV. TIRADENTES, ESQ. FANTINO  " City="Santo Domingo    ,Santo Domingo    " PC="" Province="" Country="DOM"/>
+    <References>
+        <Reference PORef=""/>
+    </References>
+    <ProductList>
+        <Product supplierSKU="" EAN="" item="Renta Basica Internet Dolar   " Qty="1" MU="" UP="888.08" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Renta Basica Telefonia Dolar  " Qty="1" MU="" UP="149.34" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Servicio Electricidad Dolar   " Qty="1" MU="" UP="3045.55" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Fondo Mercadeo Comerc. Dolar  " Qty="1" MU="" UP="2371.19" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Serv. Aire Acondicionado Dolar" Qty="1" MU="" UP="361.98" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Otros No Comunes Dolar        " Qty="1" MU="" UP="252.28" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+        <Product supplierSKU="" EAN="" item="Otros No Comunes Dolar        " Qty="1" MU="" UP="238.45" CU="" Total="" NetAmount="" SysLineType="GenericServices">
+            <Discounts>
+                <Discount/>
+            </Discounts>
+            <Taxes>
+                <Tax Type="" Rate="invoice.rate" Base="" Amount=""/>
+            </Taxes>
+        </Product>
+    </ProductList>
+    <DueDates>
+        <DueDate PaymentID="Venta a Credito" Amount="48888.36" Date="2019-03-22"/>
+    </DueDates>
+    <TaxSummary>
+        <Tax Type="Phone,CT" Rate="2" Base="" Amount="17.76"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="159.85"/>
+        <Tax Type="Phone,ST" Rate="10" Base="" Amount="88.81"/>
+        <Tax Type="Phone,CT" Rate="2" Base="" Amount="2.99"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="26.88"/>
+        <Tax Type="Phone,ST" Rate="10" Base="" Amount="14.93"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="426.81"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="65.16"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="45.41"/>
+        <Tax Type="Phone,SD" Rate="18" Base="" Amount="42.92"/>
+    </TaxSummary>
+    <TotalSummary GrossAmount="" Discounts="" SubTotal="" Tax="" Total=""/>
+</Transaction>

@@ -4,7 +4,10 @@ import fs from 'fs'
 
 export const getInvoices = async (req, res) => {
 	const queryStructure = `
-    SELECT invoice AS ref,
+    SELECT TOP 1 invoice AS ref,
+	tranid,
+	parenttranid AS parent,
+	refnmbr,
     trandate AS date,
     currcode AS currency,
     rtaxgrpid AS taxincluded,
@@ -23,7 +26,7 @@ export const getInvoices = async (req, res) => {
 		FROM currexch
 		WHERE exchgref = '00002758'
 	) AS exchangerate,
-    tipoingreso = '02',
+    tipoingreso = '2 - IngresosFinancieros',
 	tipopago = '2 - Credito',
     linesperprintedpage = '',
 	supplierid = '',
@@ -33,7 +36,7 @@ export const getInvoices = async (req, res) => {
 		WHERE entityid IN (
 				SELECT entityid
 				FROM bldg
-				WHERE bldgid = 'BM-SDC'
+				WHERE bldgid = cmledg.bldgid
 				)
 		),
     company = (
@@ -42,7 +45,7 @@ export const getInvoices = async (req, res) => {
         WHERE entityid IN (
                 SELECT entityid
                 FROM bldg
-                WHERE bldgid = 'BM-SDC'
+                WHERE bldgid = cmledg.bldgid
                 )
         ),
     address = (
@@ -51,7 +54,7 @@ export const getInvoices = async (req, res) => {
         WHERE entityid IN (
                 SELECT entityid
                 FROM bldg
-                WHERE bldgid = 'BM-SDC'
+                WHERE bldgid = cmledg.bldgid
                 )
         ),
     city = (
@@ -60,7 +63,7 @@ export const getInvoices = async (req, res) => {
         WHERE entityid IN (
                 SELECT entityid
                 FROM bldg
-                WHERE bldgid = 'BM-SDC'
+                WHERE bldgid = cmledg.bldgid
                 )
         ),
     country = 'DOM',
@@ -68,45 +71,56 @@ export const getInvoices = async (req, res) => {
     number = (
 		SELECT phoneno
 		FROM bldg
-		WHERE bldgid = 'BM-SDC'
+		WHERE bldgid = cmledg.bldgid
 		),
     cliente_cif = (
         SELECT rnc
         FROM leas
-        WHERE leasid = '000007'
+        WHERE leasid = cmledg.leasid
         ),
     company = (
         SELECT dba
         FROM leas
-        WHERE leasid = '000007'
+        WHERE leasid = cmledg.leasid
         ),
     address = (
         SELECT address
         FROM leas
-        WHERE leasid = '000007'
+        WHERE leasid = cmledg.leasid
         ),
     city = (
         SELECT city
         FROM leas
-        WHERE leasid = '000007'
+        WHERE leasid = cmledg.leasid
         ),
     country = 'DOM',
     inccat,
-    item = 'ALQUILER',
+    item = (
+		SELECT descrptn
+		FROM inch
+		WHERE inccat = cmledg.inccat
+		),
     qty = '1',
     up = TRANAMT,
-    total = (
-		SELECT sum(tranamt)
-		FROM cmledg
-		WHERE leasid = '000007'
-		AND govinvc = 'B0100000692'
-		GROUP BY govinvc
-		),
+    total = '',
     netamount = '',
-    syslinetype = 'GenericServices'
+    syslinetype = 'GenericServices',
+	type = (
+		SELECT rtaxid
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	base = '',
+	rate = (
+		SELECT rtaxperc
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	amount = tranamt,
+	Qualifier = ''
     FROM cmledg 
     WHERE leasid=000007
-    AND govinvc = 'B0100000692'`
+    AND govinvc = 'B0100015859'`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
@@ -117,8 +131,209 @@ export const getInvoices = async (req, res) => {
 	return result.recordset
 }
 
+export const getItems = async (req, res) => {
+	const queryItems = `
+    SELECT invoice AS ref,
+	tranid,
+	parenttranid AS parent,
+	refnmbr,
+    trandate AS date,
+    currcode AS currency,
+    rtaxgrpid AS taxincluded,
+    govinvc AS ncf,
+    (
+        SELECT TOP 1 vigencia 
+        FROM numerofactura 
+        WHERE entityid IN (
+            SELECT entityid 
+            FROM bldg 
+            WHERE bldgid = cmledg.bldgid
+            )
+    ) AS ncfexpirationdate,
+    (
+		SELECT exchrate
+		FROM currexch
+		WHERE exchgref = '00002758'
+	) AS exchangerate,
+    tipoingreso = '2 - IngresosFinancieros',
+	tipopago = '2 - Credito',
+    linesperprintedpage = '',
+	supplierid = '',
+    cif = (
+		SELECT phone
+		FROM entity
+		WHERE entityid IN (
+				SELECT entityid
+				FROM bldg
+				WHERE bldgid = cmledg.bldgid
+				)
+		),
+    company = (
+        SELECT name
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    address = (
+        SELECT addr1
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    city = (
+        SELECT city
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    country = 'DOM',
+    type = 'Phone',
+    number = (
+		SELECT phoneno
+		FROM bldg
+		WHERE bldgid = cmledg.bldgid
+		),
+    cliente_cif = (
+        SELECT rnc
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    company = (
+        SELECT dba
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    address = (
+        SELECT address
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    city = (
+        SELECT city
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    country = 'DOM',
+    inccat,
+    item = (
+		SELECT descrptn
+		FROM inch
+		WHERE inccat = cmledg.inccat
+		),
+    qty = '1',
+    up = TRANAMT,
+    total = '',
+    netamount = '',
+    syslinetype = 'GenericServices',
+	type = (
+		SELECT rtaxid
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	base = '',
+	rate = (
+		SELECT rtaxperc
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	amount = tranamt,
+	Qualifier = ''
+    FROM cmledg 
+    WHERE leasid=000007
+    AND govinvc = 'B0100015859'`
+
+	const pool = await getConnection()
+	const items = await pool.request().query(queryItems)
+
+	// console.log(result.recordset)
+	// res.json(result.recordset)
+
+	//Filtrar Productos
+	function filterProductsByParent(item) {
+		if (item.parent == null) {
+			return true
+		}
+		return false
+	}
+
+	const arrProductsFilteredByParent = items.recordset.filter(filterProductsByParent)
+
+	// Agregar Productos a formato json
+	const productsFormated = arrProductsFilteredByParent.map((item) => {
+		return {
+			Product: {
+				_attributes: {
+					supplierSKU: '',
+					EAN: '',
+					item: item.item,
+					Qty: '1',
+					MU: '',
+					UP: item.up,
+					CU: '',
+					Total: '',
+					NetAmount: '',
+					SysLineType: item.syslinetype,
+				},
+				Discounts: {
+					Discount: '',
+				},
+				Taxes: {
+					Tax: {
+						_attributes: {
+							Type: '',
+							Rate: '',
+							Base: '',
+							Amount: '',
+						},
+					},
+				},
+			},
+		}
+	})
+
+	// -----------------------------------------
+
+	//Filtrar Impuestos
+	function filterTaxesByParent(item) {
+		if (item.parent != null) {
+			return true
+		}
+		return false
+	}
+
+	const arrTaxesFilteredByParent = items.recordset.filter(filterTaxesByParent)
+
+	// Agregar Taxes a formato json
+	const taxesFormated = arrTaxesFilteredByParent.map((item) => {
+		return {
+			Tax: {
+				_attributes: {
+					Type: item.type,
+					Rate: item.rate,
+					Base: item.base,
+					Amount: item.amount,
+				},
+			},
+		}
+	})
+
+	// -----------------------------------------
+
+	return [productsFormated, taxesFormated]
+}
+
 export const createInvoice = async (req, res) => {
 	const invoicesJson = await getInvoices()
+	const [productsFormated, taxesFormated] = await getItems()
 
 	const batchInvoices = invoicesJson.map((invoice) => {
 		const invoiceDate = new Date(invoice.date)
@@ -197,55 +412,54 @@ export const createInvoice = async (req, res) => {
 						},
 					},
 				},
-				ProductList: {
-					//Must be Multiple ⚠️
-					Product: {
-						_attributes: {
-							SupplierSKU: '',
-							EAN: '',
-							Item: invoice.item,
-							Qty: invoice.qty,
-							MU: '',
-							UP: invoice.tranamt,
-							CU: '',
-							Total: invoice.total,
-							NetAmount: invoice.netamount,
-							SysLineType: invoice.syslinetype,
-						},
-						Discounts:
-							//Asi se duplican etiquetas
-							{
-								Discount: [
-									{
-										_attributes: {
-											Qualifier: 'Descuento',
-											Type: 'Comercial',
-											Rate: '10.00',
-											Amount: '180.00',
-										},
-									},
-									{
-										_attributes: {
-											Qualifier: 'Descuento',
-											Type: 'Pronto Pago',
-											Rate: '1.00',
-											Amount: '18.00',
-										},
-									},
-								],
-							},
-						Taxes: {
-							Tax: {
-								_attributes: {
-									Type: 'ITBIS',
-									Rate: '18.00',
-									Base: '1602.00',
-									Amount: '288.36',
-								},
-							},
-						},
+				ProductList: [
+					{
+						//Must be Multiple ⚠️
+						// Product: [
+						// 	{
+						// 		_attributes: {
+						// 			SupplierSKU: '',
+						// 			EAN: '',
+						// 			Item: invoice.item,
+						// 			Qty: invoice.qty,
+						// 			MU: '',
+						// 			UP: invoice.tranamt,
+						// 			CU: '',
+						// 			Total: invoice.total,
+						// 			NetAmount: invoice.netamount,
+						// 			SysLineType: invoice.syslinetype,
+						// 		},
+						// 		//No aplica
+						// 		Discounts:
+						// 			//Shoul be multiple
+						// 			{
+						// 				Discount: {
+						// 					// _attributes: {
+						// 					// 	Qualifier: 'Descuento',
+						// 					// 	Type: 'Comercial',
+						// 					// 	Rate: '10.00',
+						// 					// 	Amount: '180.00',
+						// 					// },
+						// 				},
+						// 			},
+						// 		Taxes: {
+						// 			Tax: {
+						// 				_attributes: {
+						// 					Type: invoice.type,
+						// 					Rate: invoice.rate,
+						// 					Base: '',
+						// 					Amount: invoice.amount,
+						// 				},
+						// 			},
+						// 		},
+						// 	},
+						// ],
+						Product: productsFormated.map((item) => {
+							return item.Product
+						}),
 					},
-				},
+				],
+
 				DueDates: {
 					DueDate: {
 						_attributes: {
@@ -255,34 +469,39 @@ export const createInvoice = async (req, res) => {
 						},
 					},
 				},
-				TaxSummary: {
-					//Multiple
-					Tax: [
-						{
-							_attributes: {
-								Type: 'ITBIS',
-								Rate: '18.00',
-								Base: '1602.00',
-								Amount: '288.36',
-							},
-						},
-						{
-							_attributes: {
-								Type: 'ITBIS',
-								Rate: '16.00',
-								Base: '3200.00',
-								Amount: '288.36',
-							},
-						},
-					],
-				},
+				TaxSummary: [
+					{
+						//Multiple
+						// Tax: [
+						// 	{
+						// 		_attributes: {
+						// 			Type: 'ITBIS',
+						// 			Rate: '18.00',
+						// 			Base: '1602.00',
+						// 			Amount: '288.36',
+						// 		},
+						// 	},
+						// 	{
+						// 		_attributes: {
+						// 			Type: '',
+						// 			Rate: '',
+						// 			Base: '',
+						// 			Amount: '',
+						// 		},
+						// 	},
+						// ],
+						Tax: taxesFormated.map((item) => {
+							return item.Tax
+						}),
+					},
+				],
 				TotalSummary: {
 					_attributes: {
-						GrossAmount: '43800.00',
-						Discounts: '198.00',
-						SubTotal: '43800.00',
-						Tax: '5088.36',
-						Total: '48888.36',
+						GrossAmount: '',
+						Discounts: '',
+						SubTotal: '',
+						Tax: '',
+						Total: '',
 					},
 				},
 			},
@@ -290,7 +509,8 @@ export const createInvoice = async (req, res) => {
 
 		const json = JSON.stringify(template)
 		const formatoXml = json2xml(json, { compact: true, spaces: 4 })
-		console.log(formatoXml)
+		//Mostrar factura por consola
+		// console.log(formatoXml)
 
 		//Exportar en archivo XML
 		fs.writeFile(
