@@ -1,180 +1,141 @@
-import { getConnection } from '../database/connection'
-import { json2xml, xml2json } from 'xml-js'
-//New
-import { xml2js } from 'xml2js'
+import { getConnection } from '../database/remoteConnection'
 import fs from 'fs'
 
 export const getProducts = async (req, res) => {
+	const ncf = req.params.ncf
+
+	const queryStructure = `
+    SELECT invoice AS ref,
+	tranid,
+	parenttranid AS parent,
+	refnmbr,
+    trandate AS date,
+    currcode AS currency,
+    rtaxgrpid AS taxincluded,
+    govinvc AS ncf,
+    (
+        SELECT TOP 1 vigencia
+        FROM numerofactura
+        WHERE entityid IN (
+            SELECT entityid
+            FROM bldg
+            WHERE bldgid = cmledg.bldgid
+            )
+    ) AS ncfexpirationdate,
+    (
+		SELECT exchrate
+		FROM currexch
+		WHERE exchgref = '00002758'
+	) AS exchangerate,
+    tipoingreso = '2 - IngresosFinancieros',
+	tipopago = '2 - Credito',
+    linesperprintedpage = '',
+	supplierid = '',
+    cif = (
+		SELECT phone
+		FROM entity
+		WHERE entityid IN (
+				SELECT entityid
+				FROM bldg
+				WHERE bldgid = cmledg.bldgid
+				)
+		),
+    company = (
+        SELECT name
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    address = (
+        SELECT addr1
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    city = (
+        SELECT city
+        FROM entity
+        WHERE entityid IN (
+                SELECT entityid
+                FROM bldg
+                WHERE bldgid = cmledg.bldgid
+                )
+        ),
+    country = 'DOM',
+    type = 'Phone',
+    number = (
+		SELECT phoneno
+		FROM bldg
+		WHERE bldgid = cmledg.bldgid
+		),
+    cliente_cif = (
+        SELECT rnc
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    company = (
+        SELECT dba
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    address = (
+        SELECT address
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    city = (
+        SELECT city
+        FROM leas
+        WHERE leasid = cmledg.leasid
+        ),
+    country = 'DOM',
+    inccat,
+    item = (
+		SELECT descrptn
+		FROM inch
+		WHERE inccat = cmledg.inccat
+		),
+    qty = '1',
+    up = TRANAMT,
+    total = '',
+    netamount = '',
+    syslinetype = 'GenericServices',
+	type = (
+		SELECT rtaxid
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	base = '',
+	rate = (
+		SELECT rtaxperc
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	),
+	amount = tranamt,
+	Qualifier = ''
+    FROM cmledg
+    WHERE leasid=000007
+    AND govinvc='B0100015859'`
+
 	const pool = await getConnection()
-	const result = await pool.request().query('SELECT * FROM Products')
+	const result = await pool.request().query(queryStructure)
 
-	// console.log(result.recordset[0].Name)
-	// res.json(result.recordset)
+	//console.log('Esto es el recordset: ' + result.recordset)
+	//const respuesta = res.json(result.recordset)
 
-	return result.recordset
-}
+	//return res.json(result.recordset)
+	res.json(result.recordset)
 
-export const xmlTest = async (req, res) => {
-	//Ejemplo de formato
-	const ejemploJson = {
-		_declaration: {
-			_attributes: {
-				version: '1.0',
-			},
-		},
-		Transaction: {
-			_attributes: {
-				'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
-				'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-			},
-			GeneralData: {
-				_attributes: {
-					ref: 'FAT9034',
-					Type: 'FacturaComercial',
-					Date: '2019-02-22',
-					Currency: 'DOP',
-					NCF: 'B0100124578',
-					NCFExpirationDate: '2019-12-31',
-					TaxIncluded: 'false',
-				},
-				PublicAdministration: {
-					DOM: {
-						_attributes: {
-							TipoIngreso: '01',
-							TipoPago: '2',
-							LinesPerPrintedPage: '25',
-						},
-					},
-				},
-			},
-			Supplier: {
-				_attributes: {
-					SupplierID: '54681',
-					Email: 'info@bebidasyrefrescos.com',
-					CIF: '10176242',
-					Company: 'Bebidas y Refrescos, S.A.',
-					Address: 'Av. Diagonal, 23',
-					City: 'Santo Domingo',
-					PC: '08012',
-					Province: 'Distrito Nacional',
-					Country: 'DOM',
-				},
-			},
-			Client: {
-				_attributes: {
-					CIF: '10137464',
-					Email: 'facturas@elpatiodom.com',
-					Company: 'El patio Dominicano S.R.L',
-					Address: 'Av. Anacaona #100',
-					City: 'Santo Domingo',
-					PC: '08012',
-					Province: 'Distrito Nacional',
-					Country: 'DOM',
-				},
-			},
-			References: {
-				Reference: {
-					_attributes: {
-						PORef: 'P459034',
-					},
-				},
-			},
-			ProductList: {
-				Product: {
-					_attributes: {
-						SupplierSKU: '60',
-						EAN: '7460828509991',
-						Item: 'Refrescos de Uva',
-						Qty: '15',
-						MU: 'Cajas',
-						UP: '120.00',
-						CU: '12',
-						Total: '1800.00',
-						NetAmount: '1602.00',
-						SysLineType: 'Purchase',
-					},
-					Discounts:
-						//Asi se duplican etiquetas
-						{
-							Discount: [
-								{
-									_attributes: {
-										Qualifier: 'Descuento',
-										Type: 'Comercial',
-										Rate: '10.00',
-										Amount: '180.00',
-									},
-								},
-								{
-									_attributes: {
-										Qualifier: 'Descuento',
-										Type: 'Pronto Pago',
-										Rate: '1.00',
-										Amount: '18.00',
-									},
-								},
-							],
-						},
-					Taxes: {
-						Tax: {
-							_attributes: {
-								Type: 'ITBIS',
-								Rate: '18.00',
-								Base: '1602.00',
-								Amount: '288.36',
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	const json = JSON.stringify(ejemploJson)
-
-	const xml = json2xml(json, { compact: true, spaces: 4 })
-
-	console.log(xml)
-	res.send(xml)
-}
-
-export const xmlReal = async (req, res) => {
-	const productsJson = await getProducts()
-
-	const arrProducts = productsJson.map((product) => {
-		let formato = {
-			GeneralData: {
-				_attributes: {
-					ref: product.Id,
-					Tpe: product.Name,
-				},
-			},
-		}
-
-		const json = JSON.stringify(formato)
-		const formatoXml = json2xml(json, { compact: true, spaces: 4 })
-
-		return formatoXml
-	})
-
-	console.log(arrProducts)
-
-	res.send('xml real belongs here')
+	//return result.recordset
 }
 
 //Render xml Template
 export const renderXml = async (req, res) => {
 	res.sendFile(__dirname + '/Formatos/ficheroFactura.xml')
-}
-
-//Convert xml to json
-export const convertXmlToJson = async (req, res) => {
-	let xml3 = fs.readFileSync(__dirname + '/Formatos/ficheroFactura.xml', 'utf8')
-	// let options = { ignoreComment: true, alwaysChildren: true }
-	// let result = xml2json(xml3, options) // or convert.xml2json(xml, options)
-	// res.json(result)
-	var result1 = xml2json(xml3, { compact: true, spaces: 4 })
-	var result2 = xml2json(xml3, { compact: false, spaces: 4 })
-
-	res.send(result1)
 }

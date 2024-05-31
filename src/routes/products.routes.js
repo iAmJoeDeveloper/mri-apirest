@@ -1,23 +1,12 @@
 import { Router } from 'express'
-import {
-	getProducts,
-	xmlTest,
-	xmlReal,
-	renderXml,
-	convertXmlToJson,
-} from '../controllers/products.controller'
+import { getProducts, renderXml } from '../controllers/products.controller'
 import { createQR } from '../controllers/qrcode.controller'
 
 const router = Router()
 
 router.get('/products', getProducts)
 
-router.get('/products/xmlTest', xmlTest)
-router.get('/products/xmlReal', xmlReal)
-
-//convertXmlToJson
-router.get('/renderXml', renderXml)
-router.get('/convertXmlToJson', convertXmlToJson)
+router.get('/products/renderxml', renderXml)
 
 //create QR Code
 router.get('/createQR', createQR)

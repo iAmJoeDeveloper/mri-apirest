@@ -1,10 +1,12 @@
 import { getConnection } from '../database/remoteConnection'
 import { json2xml, xml2json } from 'xml-js'
 import fs from 'fs'
+import path from 'path'
 
 export const getBatchOfInvoices = async (req, res) => {
 	const invoice1 = req.params.invoice1
 	const invoice2 = req.params.invoice2
+	const crearFactura = req.params.createInvoice
 
 	const queryStructure = `SELECT invoice AS ref
 	,(
@@ -80,18 +82,18 @@ export const getBatchOfInvoices = async (req, res) => {
 	,country = 'DOM'
 
 FROM cmledg 
-WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' GROUP BY INVOICE,BLDGID, LEASID
+WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' AND srccode='ch' GROUP BY INVOICE,BLDGID, LEASID
 ORDER BY invoice`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
 
+	createInvoice(result.recordset, crearFactura)
+
 	res.json(result.recordset)
 }
 
-export const getInvoices = async (req, res) => {
-	const invoiceNum = '012311'
-
+export const getHeaders = async (invoiceNum, req, res) => {
 	const queryStructure = `
     SELECT TOP 1 invoice AS ref,
 	tranid,
@@ -167,7 +169,7 @@ export const getInvoices = async (req, res) => {
         FROM leas
         WHERE leasid = cmledg.leasid
         ),
-    company = (
+    company2 = (
         SELECT dba
         FROM leas
         WHERE leasid = cmledg.leasid
@@ -183,7 +185,7 @@ export const getInvoices = async (req, res) => {
         WHERE leasid = cmledg.leasid
         ),
     country = 'DOM',
-    inccat,
+    inccat AS suppliersku,
     item = (
 		SELECT descrptn
 		FROM inch
@@ -194,7 +196,7 @@ export const getInvoices = async (req, res) => {
     total = '',
     netamount = '',
     syslinetype = 'GenericServices',
-	type = (
+	type2 = (
 		SELECT rtaxid
 		FROM rtax
 		WHERE inccat = cmledg.inccat
@@ -208,8 +210,7 @@ export const getInvoices = async (req, res) => {
 	amount = tranamt,
 	Qualifier = ''
     FROM cmledg 
-    WHERE leasid=000007
-    AND govinvc = 'B0100015859'`
+    WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
@@ -219,11 +220,11 @@ export const getInvoices = async (req, res) => {
 
 	// return res.json(result.recordset)
 	//res.json(result.recordset)
-
+	//console.log(result.recordset)
 	return result.recordset
 }
 
-export const getItems = async (req, res) => {
+export const getItems = async (invoiceNum, req, res) => {
 	const queryItems = `
     SELECT invoice AS ref,
 	tranid,
@@ -315,7 +316,7 @@ export const getItems = async (req, res) => {
         WHERE leasid = cmledg.leasid
         ),
     country = 'DOM',
-    inccat,
+    inccat as suppliersku,
     item = (
 		SELECT descrptn
 		FROM inch
@@ -326,7 +327,7 @@ export const getItems = async (req, res) => {
     total = '',
     netamount = '',
     syslinetype = 'GenericServices',
-	type = (
+	type2 = (
 		SELECT rtaxid
 		FROM rtax
 		WHERE inccat = cmledg.inccat
@@ -340,188 +341,186 @@ export const getItems = async (req, res) => {
 	amount = tranamt,
 	Qualifier = ''
     FROM cmledg 
-    WHERE leasid=000007
-    AND govinvc = 'B0100015859'`
+    WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
 	const pool = await getConnection()
 	const items = await pool.request().query(queryItems)
 
-	// console.log(result.recordset)
-	// res.json(result.recordset)
+	//console.log(result.recordset)
+	//res.json(result.recordset)
 
 	// -----------------------------------------
 
 	return items.recordset
 }
 
-export const createInvoice = async (req, res) => {
-	//Calls
-	// const bathcOfInvoices = await getBatchOfInvoices()
-	const invoicesJson = await getInvoices()
-	const taxesFormated = await formatTax()
-	const productsFormated = await filterProducts()
+export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
+	//Crear folder
+	let timestamp = Date.now()
+	let dir = `facturaComercial-${timestamp}`
+	//ACTIVAR 1/2 IMPRESION DE FACTURAS
+	if (crearFactura) {
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir)
+		}
+	}
+	//***************** */
 
-	// NUEVO
-	// batchInvoices.map((invoice)=>{
-	// 	const invoiceJson = await getInvoices(invoice.ref)
-	// })
+	const arrOfInvoices = []
 
-	//************
+	const result = await Promise.all(
+		bathOfInvoices.map(async (item) => {
+			//Calls
+			const headerFactura = await getHeaders(item.ref)
+			const [productsFormated, grossamount] = await filterProducts(item.ref)
+			const [taxesFormated, totalAmount] = await formatTax(item.ref)
+			//console.log(productsFormated)
 
-	//Run
-	const batchInvoices = invoicesJson.map((invoice) => {
-		const invoiceDate = new Date(invoice.date)
-		const invoiceExpirationDate = new Date(invoice.ncfexpirationdate)
-
-		const template = {
-			_declaration: {
-				_attributes: {
-					version: '1.0',
-				},
-			},
-			Transaction: {
-				_attributes: {
-					'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
-					'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-				},
-				GeneralData: {
-					_attributes: {
-						ref: invoice.ref,
-						Type: 'FacturaComercial',
-						Date:
-							invoiceDate.getFullYear() +
-							'-' +
-							invoiceDate.getMonth() +
-							'-' +
-							invoiceDate.getDate(),
-						Currency: invoice.currency,
-						NCF: invoice.ncf,
-						NCFExpirationDate:
-							invoiceExpirationDate.getFullYear() +
-							'-' +
-							invoiceExpirationDate.getMonth() +
-							'-' +
-							invoiceExpirationDate.getDate(),
-						TaxIncluded: 'false',
+			headerFactura.map((invoice) => {
+				const invoiceDate = new Date(invoice.date)
+				const invoiceExpirationDate = new Date(invoice.ncfexpirationdate)
+				const template = {
+					_declaration: {
+						_attributes: {
+							version: '1.0',
+						},
 					},
-					PublicAdministration: {
-						DOM: {
+					Transaction: {
+						_attributes: {
+							'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
+							'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+						},
+						GeneralData: {
 							_attributes: {
-								TipoIngreso: invoice.tipoingreso,
-								TipoPago: invoice.tipopago,
-								LinesPerPrintedPage: '',
+								ref: invoice.ref,
+								Type: 'FacturaComercial',
+								Date:
+									invoiceDate.getFullYear() +
+									'-' +
+									invoiceDate.getMonth() +
+									'-' +
+									invoiceDate.getDate(),
+								Currency: invoice.currency,
+								NCF: invoice.ncf,
+								NCFExpirationDate:
+									invoiceExpirationDate.getFullYear() +
+									'-' +
+									invoiceExpirationDate.getMonth() +
+									'-' +
+									invoiceExpirationDate.getDate(),
+								TaxIncluded: 'false',
+							},
+							PublicAdministration: {
+								DOM: {
+									_attributes: {
+										TipoIngreso: invoice.tipoingreso,
+										TipoPago: invoice.tipopago,
+										LinesPerPrintedPage: '',
+									},
+								},
+							},
+						},
+						Supplier: {
+							_attributes: {
+								SupplierID: '',
+								Email: '',
+								CIF: invoice.cif,
+								Company: invoice.company,
+								Address: invoice.address,
+								City: invoice.city,
+								PC: '',
+								Province: '',
+								Country: 'DOM',
+							},
+						},
+						Client: {
+							_attributes: {
+								CIF: invoice.cliente_cif,
+								Email: '',
+								Company: invoice.company2,
+								Address: invoice.address,
+								City: invoice.city,
+								PC: '',
+								Province: '',
+								Country: 'DOM',
+							},
+						},
+						References: {
+							Reference: {
+								_attributes: {
+									PORef: '',
+								},
+							},
+						},
+						ProductList: [
+							{
+								//Must be Multiple ⚠️
+								Product: productsFormated.map((item) => {
+									return item.Product
+								}),
+							},
+						],
+						DueDates: {
+							DueDate: {
+								_attributes: {
+									PaymentID: 'Venta a Credito',
+									Amount: grossamount + totalAmount,
+									Date: '',
+								},
+							},
+						},
+						TaxSummary: [
+							{
+								//Multiple
+								Tax: taxesFormated.map((item) => {
+									return item.Tax
+								}),
+							},
+						],
+						TotalSummary: {
+							_attributes: {
+								GrossAmount: grossamount.toFixed(2),
+								Discounts: '',
+								SubTotal: grossamount.toFixed(2),
+								Tax: totalAmount.toFixed(2),
+								Total: grossamount + totalAmount,
 							},
 						},
 					},
-				},
-				Supplier: {
-					_attributes: {
-						SupplierID: '',
-						Email: '',
-						CIF: invoice.cif,
-						Company: invoice.company,
-						Address: invoice.address,
-						City: invoice.city,
-						PC: '',
-						Province: '',
-						Country: 'DOM',
-					},
-				},
-				Client: {
-					_attributes: {
-						CIF: invoice.cliente_cif,
-						Email: '',
-						Company: invoice.company,
-						Address: invoice.address,
-						City: invoice.city,
-						PC: '',
-						Province: '',
-						Country: 'DOM',
-					},
-				},
-				References: {
-					Reference: {
-						_attributes: {
-							PORef: '',
-						},
-					},
-				},
-				ProductList: [
-					{
-						//Must be Multiple ⚠️
-						Product: productsFormated.map((item) => {
-							return item.Product
-						}),
-					},
-				],
-
-				DueDates: {
-					DueDate: {
-						_attributes: {
-							PaymentID: 'Venta a Credito',
-							Amount: '48888.36',
-							Date: '2019-03-22',
-						},
-					},
-				},
-				TaxSummary: [
-					{
-						//Multiple
-						// Tax: [
-						// 	{
-						// 		_attributes: {
-						// 			Type: 'ITBIS',
-						// 			Rate: '18.00',
-						// 			Base: '1602.00',
-						// 			Amount: '288.36',
-						// 		},
-						// 	},
-						// 	{
-						// 		_attributes: {
-						// 			Type: '',
-						// 			Rate: '',
-						// 			Base: '',
-						// 			Amount: '',
-						// 		},
-						// 	},
-						// ],
-						Tax: taxesFormated.map((item) => {
-							return item.Tax
-						}),
-					},
-				],
-				TotalSummary: {
-					_attributes: {
-						GrossAmount: '',
-						Discounts: '',
-						SubTotal: '',
-						Tax: '',
-						Total: '',
-					},
-				},
-			},
-		}
-
-		const json = JSON.stringify(template)
-		const formatoXml = json2xml(json, { compact: true, spaces: 4 })
-		//Mostrar factura por consola
-		console.log(formatoXml)
-
-		//Exportar en archivo XML
-		fs.writeFile(
-			`FacturaComercial_${invoice.ref}_${invoice.inccat}.xml`,
-			formatoXml,
-			function (error) {
-				if (error) {
-					return console.log(error)
 				}
-			}
-		)
+				//Pass Template to Json
+				const json = JSON.stringify(template)
+				//console.log(template)
+				arrOfInvoices.push(template)
 
-		return formatoXml
-	})
+				//Pass Json to Xml
+				const formatoXml = json2xml(json, { compact: true, spaces: 4 })
+				//Mostrar factura por consola
+				//console.log(formatoXml)
 
-	res.json(batchInvoices)
+				//Exportar en archivo XML
+				//ACTIVAR 2/2 IMPRESION DE FACTURAS
+				if (crearFactura) {
+					fs.writeFile(
+						`${dir}/FacturaComercial_${invoice.ref}_${timestamp}.xml`,
+						formatoXml,
+						(error) => {
+							if (error) {
+								console.log(error)
+							}
+							console.log(`Factura ${invoice.ref} creada correctamente`)
+						}
+					)
+				}
+
+				// 	return formatoXml
+				// })
+			})
+		})
+	)
+
+	//console.log(arrOfInvoices)
+	//************
 }
 
 //----------------- MODULES --------------
@@ -531,7 +530,7 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 	arrTaxes.map((tax) => {
 		if (tax.parent == productTranid) {
 			arraicito.push({
-				_attributes: { Type: tax.type, Rate: tax.rate, Base: productBase, Amount: tax.amount },
+				_attributes: { Type: tax.type2, Rate: tax.rate, Base: productBase, Amount: tax.amount },
 			})
 		}
 	})
@@ -541,8 +540,8 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 // ----------------
 
 //FILTER TAXES
-const filterTaxes = async (req, res) => {
-	const items = await getItems()
+const filterTaxes = async (invoiceNum, req, res) => {
+	const items = await getItems(invoiceNum)
 
 	//Filtrar Impuestos
 	function filterTaxesByParent(item) {
@@ -558,14 +557,16 @@ const filterTaxes = async (req, res) => {
 }
 
 //FORMAT TAXES
-const formatTax = async (req, res) => {
-	const arrTaxesFilteredByParent = await filterTaxes()
+const formatTax = async (invoiceNum, req, res) => {
+	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
+	let totalAmount = 0
 	// Agregar Taxes a formato json
 	const taxesFormated = arrTaxesFilteredByParent.map((item) => {
+		totalAmount = totalAmount + item.amount
 		return {
 			Tax: {
 				_attributes: {
-					Type: item.type,
+					Type: item.type2,
 					Rate: item.rate,
 					Base: item.base,
 					Amount: item.amount,
@@ -574,14 +575,15 @@ const formatTax = async (req, res) => {
 		}
 	})
 
-	return taxesFormated
+	return [taxesFormated, totalAmount]
 }
 //---------------------------
 
 //FILTER PRODUCTS
-const filterProducts = async (req, res) => {
-	const items = await getItems()
-	const arrTaxesFilteredByParent = await filterTaxes()
+const filterProducts = async (invoiceNum, req, res) => {
+	const items = await getItems(invoiceNum)
+	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
+	let grossamount = 0
 
 	//Filtrar Productos
 	function filterProductsByParent(item) {
@@ -595,10 +597,12 @@ const filterProducts = async (req, res) => {
 
 	// Agregar Productos a formato json
 	const productsFormated = arrProductsFilteredByParent.map((item) => {
+		grossamount = grossamount + item.up
+
 		return {
 			Product: {
 				_attributes: {
-					supplierSKU: '',
+					supplierSKU: item.suppliersku,
 					EAN: '',
 					item: item.item,
 					Qty: '1',
@@ -621,5 +625,8 @@ const filterProducts = async (req, res) => {
 		}
 	})
 
-	return productsFormated
+	return [productsFormated, grossamount]
 }
+
+// Sumar grossamount de productos
+//filter products
