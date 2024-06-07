@@ -3,6 +3,9 @@ import { json2xml, xml2json } from 'xml-js'
 import fs from 'fs'
 import path from 'path'
 
+//Modules
+import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
+
 export const getBatchOfInvoices = async (req, res) => {
 	const invoice1 = req.params.invoice1
 	const invoice2 = req.params.invoice2
@@ -118,7 +121,7 @@ export const getHeaders = async (invoiceNum, req, res) => {
     (
 		SELECT exchrate
 		FROM currexch
-		WHERE exchgref = '00002758'
+		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
     tipoingreso = '2 - IngresosFinancieros',
 	tipopago = '2 - Credito',
@@ -249,7 +252,7 @@ export const getItems = async (invoiceNum, req, res) => {
     (
 		SELECT exchrate
 		FROM currexch
-		WHERE exchgref = '00002758'
+		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
     tipoingreso = '2 - IngresosFinancieros',
 	tipopago = '2 - Credito',
@@ -395,23 +398,24 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						},
 						GeneralData: {
 							_attributes: {
-								ref: invoice.ref,
+								Ref: invoice.ref,
 								Type: 'FacturaComercial',
 								Date:
 									invoiceDate.getFullYear() +
 									'-' +
-									invoiceDate.getMonth() +
+									(invoiceDate.getMonth() + 1).toString().padStart(2, '0') +
 									'-' +
 									invoiceDate.getDate(),
 								Currency: invoice.currency,
-								NCF: invoice.ncf,
+								TaxIncluded: 'false',
+								NCF: invoice.ncf.trim(),
 								NCFExpirationDate:
 									invoiceExpirationDate.getFullYear() +
 									'-' +
-									invoiceExpirationDate.getMonth() +
+									(invoiceExpirationDate.getMonth() + 1).toString().padStart(2, '0') +
 									'-' +
 									invoiceExpirationDate.getDate(),
-								TaxIncluded: 'false',
+								ExchangeRate: invoice.exchangerate.toFixed(2),
 							},
 							PublicAdministration: {
 								DOM: {
@@ -427,8 +431,8 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							_attributes: {
 								SupplierID: '',
 								Email: '',
-								CIF: invoice.cif,
-								Company: invoice.company,
+								CIF: invoice.cif.trim(),
+								Company: invoice.company.trim(),
 								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
@@ -438,9 +442,9 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						},
 						Client: {
 							_attributes: {
-								CIF: invoice.cliente_cif,
+								CIF: invoice.cliente_cif.trim(),
 								Email: '',
-								Company: invoice.company2,
+								Company: invoice.company2.trim(),
 								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
@@ -448,13 +452,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Country: 'DOM',
 							},
 						},
-						References: {
-							Reference: {
-								_attributes: {
-									PORef: '',
-								},
-							},
-						},
+						References: {},
 						ProductList: [
 							{
 								//Must be Multiple ⚠️
@@ -467,7 +465,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							DueDate: {
 								_attributes: {
 									PaymentID: 'Venta a Credito',
-									Amount: grossamount + totalAmount,
+									Amount: (grossamount + totalAmount).toFixed(2),
 									Date: '',
 								},
 							},
@@ -486,7 +484,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Discounts: '',
 								SubTotal: grossamount.toFixed(2),
 								Tax: totalAmount.toFixed(2),
-								Total: grossamount + totalAmount,
+								Total: (grossamount + totalAmount).toFixed(2),
 							},
 						},
 					},
@@ -711,43 +709,89 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 // ----------------
 
 //FILTER TAXES
-const filterTaxes = async (invoiceNum, req, res) => {
-	const items = await getItems(invoiceNum)
+// const filterTaxes = async (invoiceNum, req, res) => {
+// 	const items = await getItems(invoiceNum)
 
-	//Filtrar Impuestos
-	function filterTaxesByParent(item) {
-		if (item.parent != null) {
-			return true
-		}
-		return false
-	}
+// 	//Filtrar Impuestos
+// 	function filterTaxesByParent(item) {
+// 		if (item.parent != null) {
+// 			return true
+// 		}
+// 		return false
+// 	}
 
-	const arrTaxesFilteredByParent = items.filter(filterTaxesByParent)
+// 	const arrTaxesFilteredByParent = items.filter(filterTaxesByParent)
 
-	return arrTaxesFilteredByParent
-}
+// 	return arrTaxesFilteredByParent
+// }
+
+//---------------------------
 
 //FORMAT TAXES
-const formatTax = async (invoiceNum, req, res) => {
-	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
-	let totalAmount = 0
-	// Agregar Taxes a formato json
-	const taxesFormated = arrTaxesFilteredByParent.map((item) => {
-		totalAmount = totalAmount + item.amount
-		return {
-			Tax: {
-				_attributes: {
-					Type: item.type2,
-					Rate: item.rate,
-					Base: item.base,
-					Amount: item.amount,
-				},
-			},
-		}
-	})
+// const formatTax = async (invoiceNum, req, res) => {
+// 	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
+// 	let totalAmount = 0
 
-	return [taxesFormated, totalAmount]
-}
+// 	// Group by Taxes by Type and Rate
+// 	const taxesGrouped = []
+// 	let SD18_amount = 0
+// 	let ST10_amount = 0
+// 	let CT2_amount = 0
+
+// 	const GroupingTaxes = arrTaxesFilteredByParent.map((item) => {
+// 		if (item.type2 == 'SD' && item.rate == '18') {
+// 			SD18_amount = SD18_amount + item.amount
+// 		}
+
+// 		if (item.type2 == 'ST' && item.rate == '10') {
+// 			ST10_amount = ST10_amount + item.amount
+// 		}
+
+// 		if (item.type2 == 'CT' && item.rate == '2') {
+// 			CT2_amount = CT2_amount + item.amount
+// 		}
+// 	})
+
+// 	taxesGrouped.push(
+// 		{
+// 			type2: 'SD',
+// 			rate: '18',
+// 			base: 0,
+// 			amount: SD18_amount,
+// 		},
+// 		{
+// 			type2: 'ST',
+// 			rate: '10',
+// 			base: 0,
+// 			amount: ST10_amount,
+// 		},
+// 		{
+// 			type2: 'CT',
+// 			rate: '2',
+// 			base: 0,
+// 			amount: CT2_amount,
+// 		}
+// 	)
+
+// 	// Agregar Taxes a formato json
+// 	const taxesFormated = taxesGrouped.map((item) => {
+// 		totalAmount = totalAmount + item.amount
+
+// 		return {
+// 			Tax: {
+// 				_attributes: {
+// 					Type: item.type2,
+// 					Rate: item.rate,
+// 					Base: item.base,
+// 					Amount: item.amount.toFixed(2),
+// 				},
+// 			},
+// 		}
+// 	})
+
+// 	return [taxesFormated, totalAmount]
+// }
+
 //---------------------------
 
 //FILTER PRODUCTS
@@ -775,7 +819,7 @@ const filterProducts = async (invoiceNum, req, res) => {
 				_attributes: {
 					supplierSKU: item.suppliersku,
 					EAN: '',
-					item: item.item,
+					item: item.item.trim(),
 					Qty: '1',
 					MU: '',
 					UP: item.up,
@@ -784,9 +828,7 @@ const filterProducts = async (invoiceNum, req, res) => {
 					NetAmount: item.amount,
 					SysLineType: item.syslinetype,
 				},
-				Discounts: {
-					Discount: '',
-				},
+				Discounts: {},
 				Taxes: [
 					{
 						Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
