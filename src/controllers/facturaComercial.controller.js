@@ -350,8 +350,6 @@ export const getItems = async (invoiceNum, req, res) => {
 	//console.log(result.recordset)
 	//res.json(result.recordset)
 
-	// -----------------------------------------
-
 	return items.recordset
 }
 
@@ -387,7 +385,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				const template = {
 					_declaration: {
 						_attributes: {
-							version: '1.0',
+							Version: '1.0',
 						},
 					},
 					Transaction: {
@@ -404,7 +402,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 									'-' +
 									(invoiceDate.getMonth() + 1).toString().padStart(2, '0') +
 									'-' +
-									invoiceDate.getDate(),
+									invoiceDate.getDate().toString().padStart(2, '0'),
 								Currency: invoice.currency,
 								TaxIncluded: 'false',
 								NCF: invoice.ncf.trim(),
@@ -413,7 +411,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 									'-' +
 									(invoiceExpirationDate.getMonth() + 1).toString().padStart(2, '0') +
 									'-' +
-									invoiceExpirationDate.getDate(),
+									invoiceExpirationDate.getDate().toString().padStart(2, '0'),
 								ExchangeRate: invoice.exchangerate.toFixed(2),
 							},
 							PublicAdministration: {
@@ -442,7 +440,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						Client: {
 							_attributes: {
 								CIF: invoice.cliente_cif.trim(),
-								Email: '',
+								Email: '' === '' ? 'tecnologia@bluemall.com.do' : '',
 								Company: invoice.company2.trim(),
 								Address: invoice.address,
 								City: invoice.city,
@@ -470,7 +468,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 										'-' +
 										(dueDate.getMonth() + 1).toString().padStart(2, '0') +
 										'-' +
-										dueDate.getDate(),
+										dueDate.getDate().toString().padStart(2, '0'),
 								},
 							},
 						},
@@ -713,14 +711,6 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 }
 // ----------------
 
-//FILTER TAXES
-
-//---------------------------
-
-//FORMAT TAXES
-
-//---------------------------
-
 //FILTER PRODUCTS
 const filterProducts = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
@@ -744,9 +734,9 @@ const filterProducts = async (invoiceNum, req, res) => {
 		return {
 			Product: {
 				_attributes: {
-					supplierSKU: item.suppliersku,
+					SupplierSKU: item.suppliersku,
 					EAN: '',
-					item: item.item.trim(),
+					Item: item.item.trim(),
 					Qty: '1',
 					MU: '',
 					UP: item.up,
@@ -767,6 +757,3 @@ const filterProducts = async (invoiceNum, req, res) => {
 
 	return [productsFormated, grossamount]
 }
-
-// Sumar grossamount de productos
-//filter products

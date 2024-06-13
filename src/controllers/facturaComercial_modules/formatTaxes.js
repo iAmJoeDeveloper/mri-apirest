@@ -1,10 +1,10 @@
 import { getItems } from '../facturaComercial.controller'
 
-//FILTER TAXES
+// Filter taxes by parent
 const filterTaxes = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 
-	//Filtrar Impuestos
+	//Filtering
 	function filterTaxesByParent(item) {
 		if (item.parent != null) {
 			return true
@@ -19,7 +19,7 @@ const filterTaxes = async (invoiceNum, req, res) => {
 
 //---------------------------
 
-//FORMAT TAXES
+// Fortmat Taxes
 const formatTax = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
@@ -51,7 +51,7 @@ const formatTax = async (invoiceNum, req, res) => {
 
 	const amounts = initializeAmounts()
 
-	//Filtrar Impuestos
+	//Filter Parent Product
 	function filterParents(item) {
 		if (item.parent == null) {
 			return true
@@ -59,8 +59,8 @@ const formatTax = async (invoiceNum, req, res) => {
 		return false
 	}
 	const arrFilterParents = items.filter(filterParents)
-	//End Filtrar impuestos
 
+	// Setting Amount
 	arrTaxesFilteredByParent.forEach((item) => {
 		const type = item.type2
 		const rate = item.rate
@@ -69,7 +69,7 @@ const formatTax = async (invoiceNum, req, res) => {
 			amounts[type][rate].amount += item.amount
 		}
 
-		//New
+		// Setting Base
 		arrFilterParents.forEach((itemParent) => {
 			const type = item.type2
 			const rate = item.rate
@@ -78,9 +78,9 @@ const formatTax = async (invoiceNum, req, res) => {
 				if (item.parent == itemParent.tranid) amounts[type][rate].base += itemParent.amount
 			}
 		})
-		//end new
 	})
 
+	// Pushing object to taxesGrouped array
 	for (const type in amounts) {
 		for (const rate in amounts[type]) {
 			if (amounts[type][rate].amount > 0) {
@@ -94,7 +94,7 @@ const formatTax = async (invoiceNum, req, res) => {
 		}
 	}
 
-	// Agregar Taxes a formato json
+	// Adding Taxes to json format
 	const taxesFormated = taxesGrouped.map((item) => {
 		totalAmount += item.amount
 
