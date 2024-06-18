@@ -5,6 +5,7 @@ import {
 	getBatchOfInvoices,
 	sendInvoices,
 } from '../controllers/facturaComercial.controller'
+// import { sendInvoices } from '../controllers/facturaComercial_modules/sendInvoice'
 
 const router = Router()
 
@@ -14,7 +15,14 @@ router.get('/facturas', getHeaders)
 
 router.get('/createFactura/:datas', createInvoice)
 
-router.get('/factura/sendInvoices', sendInvoices)
+router.post('/factura/sendInvoices', sendInvoices)
+router.post('/show', (req, res) => {
+	const receiveObject = req.body
+	console.log('Objeto recibido desde API: ')
+	console.log(receiveObject)
+
+	res.status(200)
+})
 
 router.get('facturas/getList', (req, res) => {
 	console.log('getting list')

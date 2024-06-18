@@ -5,6 +5,9 @@ import path from 'path'
 
 //Modules
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
+import { sendInvoice } from './facturaComercial_modules/sendInvoice'
+
+let invoiceBox
 
 export const getBatchOfInvoices = async (req, res) => {
 	const invoice1 = req.params.invoice1
@@ -87,9 +90,6 @@ ORDER BY invoice`
 	const result = await pool.request().query(queryStructure)
 
 	createInvoice(result.recordset, crearFactura)
-
-	//Quitar
-	getListOfInvoices()
 
 	res.json(result.recordset)
 }
@@ -522,162 +522,24 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 		})
 	)
 
-	//console.log(arrOfInvoices)
+	// console.log(arrOfInvoices)
+
+	invoiceBox = arrOfInvoices
+
+	// return arrOfInvoices
 	//************
 }
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
-	//Template
-	const template = {
-		Transaction: {
-			_attributes: {
-				'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-				'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
-			},
-			GeneralData: {
-				_attributes: {
-					Ref: '0000876352',
-					Type: 'FacturaComercial',
-					Date: '2024-04-22',
-					Currency: 'USD',
-					TaxIncluded: 'false',
-					NCF: 'E310000019555',
-					NCFExpirationDate: '2025-12-31',
-					ExchangeRate: '59.34',
-				},
-				PublicAdministration: {
-					DOM: {
-						_attributes: {
-							TipoIngreso: '01',
-							TipoPago: '2',
-							LinesPerPrintedPage: '15',
-						},
-					},
-				},
-			},
-			Supplier: {
-				_attributes: {
-					SupplierID: '130348707',
-					Email: 'test@test.com',
-					CIF: '130348707',
-					Company: 'Allard Industries LTD',
-					Address: 'AV. WINSTON CHURCHILL',
-					Country: 'DOM',
-				},
-				PhoneNumbers: {
-					PhoneNumber: {
-						_attributes: {
-							Type: 'Phone',
-							Number: '530-2837',
-						},
-					},
-				},
-			},
-			Client: {
-				_attributes: {
-					CIF: '401506252',
-					Email: 'client@test.com',
-					Company: 'INVERSIONES CORIANDER S.R.L.',
-					Address: 'AV. WINSTON CHURCHILL',
-					City: '001',
-					Country: 'DOM',
-				},
-			},
-			References: {},
-			ProductList: {
-				//Must be Multiple ⚠️
-				Product: {
-					_attributes: {
-						SupplierSKU: 'RID',
-						EAN: '746010459220',
-						Item: 'Renta Basica Internet Dolar',
-						Qty: '1',
-						MU: 'Unidades',
-						UP: '1001.76',
-						Total: '1001.76',
-						NetAmount: '1001.76',
-						SysLineType: 'GenericServices',
-						CU: '1',
-					},
-					Taxes: {
-						Tax: {
-							_attributes: {
-								Type: 'ITBIS',
-								Rate: '18',
-								Base: '1001.76',
-								Amount: '20.04',
-							},
-						},
-					},
-				},
-			},
-			TaxSummary: {
-				//Multiple
-				Tax: {
-					_attributes: {
-						Type: 'ITBIS',
-						Rate: '18',
-						Base: '2897.45',
-						Amount: '521.54',
-					},
-				},
-			},
-
-			DueDates: {
-				DueDate: {
-					_attributes: {
-						Date: '2024-06-21',
-						Amount: '3480.08',
-						PaymentID: '2',
-						Description: 'Credito',
-					},
-				},
-			},
-
-			TotalSummary: {
-				_attributes: {
-					SubTotal: '2897.45',
-					Tax: '521.54',
-					Total: '3418.99',
-				},
-			},
-		},
-	}
-	//Pass Template to Json
-	const json = JSON.stringify(template)
-	//Pass Json to Xml
-	const formatoXml = json2xml(json, { compact: true, spaces: 4 })
-
-	// console.log(formatoXml)
-
-	const action = async (i) => {
+	invoiceBox.map(async (invoice) => {
 		try {
-			res = await fetch(
-				'https://fileconnector.voxelgroup.net/outbox/FacturaComercial_026872_1712333833178.xml',
-				{
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'text/xml',
-						Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
-					},
-					body: formatoXml,
-				}
-			)
-				.then((response) => {
-					// console.log(response)
-					console.log('success')
-				})
-				.catch((error) => {
-					console.log(`ERRORCITO! ${error}`)
-				})
-			// return await res.json()
+			await sendInvoice(invoice)
+			res.status(200).send('Datos enviados exitosamente')
 		} catch (error) {
-			console.log('Error from API Send: ' + error)
+			res.status(500).send('Error al enviar datos')
 		}
-	}
-
-	action(formatoXml)
+	})
 }
 
 //Get List of Invoices
@@ -687,9 +549,7 @@ const getListOfInvoices = async (req, res) => {
 			headers: {
 				Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
 			},
-		}).then((res) => console.log(res))
-
-		console.log('Getting Success')
+		}).then((res) => console.log(''))
 	} catch (error) {
 		console.log('Error from API Get: ' + error)
 	}
