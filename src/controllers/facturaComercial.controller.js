@@ -385,7 +385,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				const template = {
 					_declaration: {
 						_attributes: {
-							Version: '1.0',
+							version: '1.0',
 						},
 					},
 					Transaction: {
