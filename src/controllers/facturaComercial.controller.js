@@ -7,6 +7,10 @@ import path from 'path'
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
 import { sendInvoice } from './facturaComercial_modules/sendInvoice'
 
+//Utils
+import { compareTaxCode } from '../utils/compareTaxCode'
+import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
+
 let invoiceBox
 
 export const getBatchOfInvoices = async (req, res) => {
@@ -15,8 +19,8 @@ export const getBatchOfInvoices = async (req, res) => {
 	const crearFactura = req.params.createInvoice
 
 	const queryStructure = `SELECT invoice AS ref
-	,tipoingreso = '2 - IngresosFinancieros'
-	,tipopago = '2 - Credito'
+	,tipoingreso = '2'
+	,tipopago = '2'
 	,cif = (
 		SELECT PHONE
 		FROM entity
@@ -118,8 +122,8 @@ export const getHeaders = async (invoiceNum, req, res) => {
 		FROM currexch
 		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
-    tipoingreso = '2 - IngresosFinancieros',
-	tipopago = '2 - Credito',
+    tipoingreso = '2',
+	tipopago = '2',
     linesperprintedpage = '',
 	supplierid = '',
     cif = (
@@ -249,8 +253,8 @@ export const getItems = async (invoiceNum, req, res) => {
 		FROM currexch
 		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
-    tipoingreso = '2 - IngresosFinancieros',
-	tipopago = '2 - Credito',
+    tipoingreso = '2',
+	tipopago = '2',
     linesperprintedpage = '',
 	supplierid = '',
     cif = (
@@ -406,12 +410,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Currency: invoice.currency,
 								TaxIncluded: 'false',
 								NCF: invoice.ncf.trim(),
-								NCFExpirationDate:
-									invoiceExpirationDate.getFullYear() +
-									'-' +
-									(invoiceExpirationDate.getMonth() + 1).toString().padStart(2, '0') +
-									'-' +
-									invoiceExpirationDate.getDate().toString().padStart(2, '0'),
+								NCFExpirationDate: '2025-12-31',
 								ExchangeRate: invoice.exchangerate.toFixed(2),
 							},
 							PublicAdministration: {
@@ -428,7 +427,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							_attributes: {
 								SupplierID: '',
 								Email: '',
-								CIF: invoice.cif.trim(),
+								CIF: invoice.cif,
 								Company: invoice.company.trim(),
 								Address: invoice.address,
 								City: invoice.city,
@@ -441,7 +440,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							_attributes: {
 								CIF: invoice.cliente_cif.trim(),
 								Email: '' === '' ? 'tecnologia@bluemall.com.do' : '',
-								Company: invoice.company2.trim(),
+								Company: sanitizeCompanyName(invoice.company2).trim(),
 								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
@@ -532,6 +531,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
+	console.log('Llego')
 	invoiceBox.map(async (invoice) => {
 		try {
 			await sendInvoice(invoice)
@@ -562,7 +562,12 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 	arrTaxes.map((tax) => {
 		if (tax.parent == productTranid) {
 			arraicito.push({
-				_attributes: { Type: tax.type2, Rate: tax.rate, Base: productBase, Amount: tax.amount },
+				_attributes: {
+					Type: compareTaxCode(tax.type2),
+					Rate: tax.rate,
+					Base: productBase,
+					Amount: tax.amount,
+				},
 			})
 		}
 	})

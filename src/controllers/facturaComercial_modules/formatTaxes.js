@@ -1,4 +1,5 @@
 import { getItems } from '../facturaComercial.controller'
+import { compareTaxCode } from '../../utils/compareTaxCode'
 
 // Filter taxes by parent
 const filterTaxes = async (invoiceNum, req, res) => {
@@ -19,7 +20,7 @@ const filterTaxes = async (invoiceNum, req, res) => {
 
 //---------------------------
 
-// Fortmat Taxes
+// Format Taxes
 const formatTax = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
@@ -101,7 +102,7 @@ const formatTax = async (invoiceNum, req, res) => {
 		return {
 			Tax: {
 				_attributes: {
-					Type: item.type2,
+					Type: compareTaxCode(item.type2),
 					Rate: item.rate,
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
