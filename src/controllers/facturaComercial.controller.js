@@ -10,6 +10,7 @@ import { sendInvoice } from './facturaComercial_modules/sendInvoice'
 //Utils
 import { compareTaxCode } from '../utils/compareTaxCode'
 import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
+import { emptyTrim } from '../utils/emptyTrim'
 
 let invoiceBox
 
@@ -427,7 +428,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							_attributes: {
 								SupplierID: '',
 								Email: '',
-								CIF: invoice.cif,
+								CIF: emptyTrim(invoice.cif),
 								Company: invoice.company.trim(),
 								Address: invoice.address,
 								City: invoice.city,
@@ -531,15 +532,18 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
-	console.log('Llego')
-	invoiceBox.map(async (invoice) => {
-		try {
-			await sendInvoice(invoice)
-			res.status(200).send('Datos enviados exitosamente')
-		} catch (error) {
-			res.status(500).send('Error al enviar datos')
-		}
-	})
+	if (invoiceBox != undefined) {
+		invoiceBox.map(async (invoice) => {
+			try {
+				await sendInvoice(invoice)
+				res.status(200).send('Datos enviados exitosamente')
+			} catch (error) {
+				res.status(500).send('Error al enviar datos')
+			}
+		})
+	} else {
+		console.error('There are not invoices in the invoice box')
+	}
 }
 
 //Get List of Invoices

@@ -15,7 +15,7 @@ router.get('/facturas', getHeaders)
 
 router.get('/createFactura/:datas', createInvoice)
 
-router.post('/factura/sendInvoices', sendInvoices)
+router.post('/facturas/sendInvoices', sendInvoices)
 router.post('/show', (req, res) => {
 	const receiveObject = req.body
 	console.log('Objeto recibido desde API: ')
