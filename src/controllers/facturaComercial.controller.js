@@ -5,10 +5,10 @@ import path from 'path'
 
 //Modules
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
-import { sendInvoice } from './facturaComercial_modules/sendInvoice'
+import { sendInvoice, sendInvoiceBavel } from './facturaComercial_modules/sendInvoice'
+import { taxLinked } from './facturaComercial_modules/taxLinked'
 
 //Utils
-import { compareTaxCode } from '../utils/compareTaxCode'
 import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
 import { emptyTrim } from '../utils/emptyTrim'
 
@@ -494,11 +494,13 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				//Pass Template to Json
 				const json = JSON.stringify(template)
 				//console.log(template)
-				arrOfInvoices.push(template)
 
 				//Pass Json to Xml
 				const formatoXml = json2xml(json, { compact: true, spaces: 4 })
 				//Mostrar factura por consola
+
+				//Push xml into arrOfInvoices
+				arrOfInvoices.push(template)
 				//console.log(formatoXml)
 
 				//Exportar en archivo XML
@@ -522,6 +524,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 		})
 	)
 
+	//See what is inside of arrOfInvoices
 	// console.log(arrOfInvoices)
 
 	invoiceBox = arrOfInvoices
@@ -534,9 +537,15 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 export const sendInvoices = async (req, res) => {
 	if (invoiceBox != undefined) {
 		invoiceBox.map(async (invoice) => {
+			let type = invoice.Transaction.GeneralData._attributes.Type
+			let invoiceNumber = invoice.Transaction.GeneralData._attributes.NCF
+
+			//Pass Json to Xml
+			const invoiceXML = json2xml(invoice, { compact: true, spaces: 4 })
+
 			try {
-				await sendInvoice(invoice)
-				res.status(200).send('Datos enviados exitosamente')
+				await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
+				// res.status(200).send('Datos enviados exitosamente')
 			} catch (error) {
 				res.status(500).send('Error al enviar datos')
 			}
@@ -560,25 +569,6 @@ const getListOfInvoices = async (req, res) => {
 }
 
 //----------------- MODULES --------------
-//TAX LINKAGE
-const taxLinked = (productTranid, arrTaxes, productBase) => {
-	let arraicito = []
-	arrTaxes.map((tax) => {
-		if (tax.parent == productTranid) {
-			arraicito.push({
-				_attributes: {
-					Type: compareTaxCode(tax.type2),
-					Rate: tax.rate,
-					Base: productBase,
-					Amount: tax.amount,
-				},
-			})
-		}
-	})
-
-	return arraicito
-}
-// ----------------
 
 //FILTER PRODUCTS
 const filterProducts = async (invoiceNum, req, res) => {

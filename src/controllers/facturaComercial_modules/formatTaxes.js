@@ -90,6 +90,7 @@ const formatTax = async (invoiceNum, req, res) => {
 					rate: rate,
 					base: amounts[type][rate].base,
 					amount: amounts[type][rate].amount,
+					qualifier: '',
 				})
 			}
 		}
@@ -106,6 +107,7 @@ const formatTax = async (invoiceNum, req, res) => {
 					Rate: item.rate,
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
+					Qualifier: '',
 				},
 			},
 		}
