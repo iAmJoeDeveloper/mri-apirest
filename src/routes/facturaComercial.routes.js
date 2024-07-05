@@ -26,10 +26,15 @@ router.post('/show', (req, res) => {
 	res.status(200)
 })
 
-router.get('/consultInbox', async (req, res) => {
+router.get('/consultInbox/:value?', async (req, res) => {
+	const { value } = req.params
+	const url = value
+		? `https://fileconnector.voxelgroup.net/inbox/${value}`
+		: 'https://fileconnector.voxelgroup.net/inbox'
+
 	try {
 		//Await Fetch
-		const request = await fetch(`https://fileconnector.voxelgroup.net/inbox`, {
+		const request = await fetch(url, {
 			method: 'GET',
 			mode: 'cors',
 			credentials: 'include',
