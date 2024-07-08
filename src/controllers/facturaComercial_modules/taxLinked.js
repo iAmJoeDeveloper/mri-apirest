@@ -11,6 +11,7 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 					Rate: tax.rate,
 					Base: productBase,
 					Amount: tax.amount,
+					Qualifier: tax.qualifier,
 				},
 			})
 		}

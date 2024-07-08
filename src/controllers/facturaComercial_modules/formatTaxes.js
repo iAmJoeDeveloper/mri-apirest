@@ -29,25 +29,25 @@ const formatTax = async (invoiceNum, req, res) => {
 	const taxesGrouped = []
 
 	const initializeAmounts = () => ({
-		CD: { 2: { amount: 0, base: 0 } },
-		CT: { 2: { amount: 0, base: 0 } },
-		ED: { 18: { amount: 0, base: 0 } },
-		EP: { 18: { amount: 0, base: 0 } },
-		HD: { 18: { amount: 0, base: 0 } },
-		HP: { 18: { amount: 0, base: 0 } },
-		ID: { 18: { amount: 0, base: 0 } },
-		IM: { 18: { amount: 0, base: 0 } },
-		IP: { 18: { amount: 0, base: 0 } },
-		IS: { 10: { amount: 0, base: 0 } },
-		IX: { 18: { amount: 0, base: 0 } },
-		MD: { 18: { amount: 0, base: 0 } },
-		OD: { 18: { amount: 0, base: 0 } },
-		OP: { 18: { amount: 0, base: 0 } },
-		PD: { 18: { amount: 0, base: 0 } },
-		PP: { 18: { amount: 0, base: 0 } },
-		SD: { 18: { amount: 0, base: 0 } },
-		SP: { 18: { amount: 0, base: 0 } },
-		ST: { 10: { amount: 0, base: 0 } },
+		CD: { 2: { amount: 0, base: 0, qualifier: '' } },
+		CT: { 2: { amount: 0, base: 0, qualifier: '' } },
+		ED: { 18: { amount: 0, base: 0, qualifier: '' } },
+		EP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		HD: { 18: { amount: 0, base: 0, qualifier: '' } },
+		HP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		ID: { 18: { amount: 0, base: 0, qualifier: '' } },
+		IM: { 18: { amount: 0, base: 0, qualifier: '' } },
+		IP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		IS: { 10: { amount: 0, base: 0, qualifier: '' } },
+		IX: { 18: { amount: 0, base: 0, qualifier: '' } },
+		MD: { 18: { amount: 0, base: 0, qualifier: '' } },
+		OD: { 18: { amount: 0, base: 0, qualifier: '' } },
+		OP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		PD: { 18: { amount: 0, base: 0, qualifier: '' } },
+		PP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		SD: { 18: { amount: 0, base: 0, qualifier: '' } },
+		SP: { 18: { amount: 0, base: 0, qualifier: '' } },
+		ST: { 10: { amount: 0, base: 0, qualifier: '' } },
 	})
 
 	const amounts = initializeAmounts()
@@ -68,6 +68,7 @@ const formatTax = async (invoiceNum, req, res) => {
 
 		if (amounts[type] && amounts[type][rate] !== undefined) {
 			amounts[type][rate].amount += item.amount
+			amounts[type][rate].qualifier = item.qualifier // Assign qualifier
 		}
 
 		// Setting Base
@@ -90,7 +91,7 @@ const formatTax = async (invoiceNum, req, res) => {
 					rate: rate,
 					base: amounts[type][rate].base,
 					amount: amounts[type][rate].amount,
-					qualifier: '',
+					qualifier: amounts[type][rate].qualifier,
 				})
 			}
 		}
@@ -107,7 +108,7 @@ const formatTax = async (invoiceNum, req, res) => {
 					Rate: item.rate,
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
-					Qualifier: '',
+					Qualifier: item.qualifier,
 				},
 			},
 		}

@@ -214,7 +214,11 @@ export const getHeaders = async (invoiceNum, req, res) => {
 		WHERE inccat = cmledg.inccat
 	),
 	amount = tranamt,
-	Qualifier = ''
+	(
+		SELECT REFDESC
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	) AS qualifier
     FROM cmledg 
     WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
@@ -345,7 +349,11 @@ export const getItems = async (invoiceNum, req, res) => {
 		WHERE inccat = cmledg.inccat
 	),
 	amount = tranamt,
-	Qualifier = ''
+	(
+		SELECT REFDESC
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	) AS qualifier
     FROM cmledg 
     WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
