@@ -1,5 +1,6 @@
 import { getItems } from '../facturaComercial.controller'
 import { compareTaxCode } from '../../utils/compareTaxCode'
+import { compareQualifier } from '../../utils/compareQualifier'
 
 // Filter taxes by parent
 const filterTaxes = async (invoiceNum, req, res) => {
@@ -108,7 +109,7 @@ const formatTax = async (invoiceNum, req, res) => {
 					Rate: item.rate,
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
-					Qualifier: item.qualifier,
+					Qualifier: compareQualifier(item.qualifier),
 				},
 			},
 		}

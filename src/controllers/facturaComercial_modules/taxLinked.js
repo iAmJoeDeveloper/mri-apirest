@@ -1,4 +1,5 @@
 import { compareTaxCode } from '../../utils/compareTaxCode'
+import { compareQualifier } from '../../utils/compareQualifier'
 
 // Tax Linkage
 const taxLinked = (productTranid, arrTaxes, productBase) => {
@@ -11,7 +12,7 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 					Rate: tax.rate,
 					Base: productBase,
 					Amount: tax.amount,
-					Qualifier: tax.qualifier,
+					Qualifier: compareQualifier(tax.qualifier),
 				},
 			})
 		}
