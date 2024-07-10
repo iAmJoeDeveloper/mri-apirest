@@ -12,6 +12,13 @@ import { taxLinked } from './facturaComercial_modules/taxLinked'
 import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
 import { emptyTrim } from '../utils/emptyTrim'
 
+//BD
+import mongoose, { mongo } from 'mongoose'
+import Package from '../models/packageModel'
+import dotenv from 'dotenv'
+dotenv.config()
+const MONGO_URL = process.env.MONGO_URL
+
 let invoiceBox
 
 export const getBatchOfInvoices = async (req, res) => {
@@ -547,6 +554,15 @@ export const sendInvoices = async (req, res) => {
 		invoiceBox.map(async (invoice) => {
 			let type = invoice.Transaction.GeneralData._attributes.Type
 			let invoiceNumber = invoice.Transaction.GeneralData._attributes.NCF
+
+			//Saving Test
+			await mongoose.connect(MONGO_URL)
+			const newPackage = await Package.create({
+				name: 'Test 1',
+				status: 'pending',
+			})
+
+			console.log(newPackage)
 
 			//Pass Json to Xml
 			const invoiceXML = json2xml(invoice, { compact: true, spaces: 4 })

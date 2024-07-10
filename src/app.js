@@ -1,4 +1,5 @@
 import express from 'express'
+
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import config from './config'
@@ -14,7 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 //settings
-app.set('port', config.port)
+// app.set('port', config.port)
 
 app.use(invoicesRoutes, facturaRoutes)
 
