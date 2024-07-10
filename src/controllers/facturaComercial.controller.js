@@ -560,6 +560,18 @@ export const sendInvoices = async (req, res) => {
 			const newPackage = await Package.create({
 				name: 'Test 1',
 				status: 'pending',
+				invoices: [
+					{
+						ncf: '123456',
+						ref: 'INV001',
+						status: 'pending',
+					},
+					{
+						ncf: '654321',
+						ref: 'INV002',
+						status: 'completed',
+					},
+				],
 			})
 
 			console.log(newPackage)
