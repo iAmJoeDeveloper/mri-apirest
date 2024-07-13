@@ -3,6 +3,9 @@ import { json2xml, xml2json } from 'xml-js'
 import fs from 'fs'
 import path from 'path'
 
+//Others controllers
+import { createPackage } from './packageController'
+
 //Modules
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
 import { sendInvoice, sendInvoiceBavel } from './facturaComercial_modules/sendInvoice'
@@ -550,41 +553,35 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
+	// Call createPackage to save array in DB
+	// createPackage(invoiceBox)
+	fetch('http://localhost:3000/package/create', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			invoiceBox: invoiceBox,
+		}),
+	})
+		.then((response) => response.json())
+		.then((data) => console.log(data))
+		.catch((error) => console.error('Error:', error))
+
 	if (invoiceBox != undefined) {
 		invoiceBox.map(async (invoice) => {
 			let type = invoice.Transaction.GeneralData._attributes.Type
 			let invoiceNumber = invoice.Transaction.GeneralData._attributes.NCF
 
-			//Saving Test
-			await mongoose.connect(MONGO_URL)
-			const newPackage = await Package.create({
-				name: 'Test 1',
-				status: 'pending',
-				invoices: [
-					{
-						ncf: '123456',
-						ref: 'INV001',
-						status: 'pending',
-					},
-					{
-						ncf: '654321',
-						ref: 'INV002',
-						status: 'completed',
-					},
-				],
-			})
-
-			console.log(newPackage)
-
 			//Pass Json to Xml
 			const invoiceXML = json2xml(invoice, { compact: true, spaces: 4 })
 
-			try {
-				await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
-				// res.status(200).send('Datos enviados exitosamente')
-			} catch (error) {
-				res.status(500).send('Error al enviar datos')
-			}
+			// try {
+			// 	await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
+			// 	// res.status(200).send('Datos enviados exitosamente')
+			// } catch (error) {
+			// 	res.status(500).send('Error al enviar datos')
+			// }
 		})
 	} else {
 		console.error('There are not invoices in the invoice box')
