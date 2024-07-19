@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 
 //Others controllers
-import { createPackage } from './packageController'
+import { createPackage } from './package.controller'
 
 //Modules
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
@@ -554,35 +554,45 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 //Send Invoices
 export const sendInvoices = async (req, res) => {
 	// Call createPackage to save array in DB
-	// createPackage(invoiceBox)
-	fetch('http://localhost:3000/package/create', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			invoiceBox: invoiceBox,
-		}),
-	})
-		.then((response) => response.json())
-		.then((data) => console.log(data))
-		.catch((error) => console.error('Error:', error))
+	// try {
+	// 	await createPackage(invoiceBox)
+	// } catch (error) {
+	// 	console.error('Error saving package to DB:', error)
+	// 	return res.status(500).send('Error saving package to DB')
+	// }
 
-	if (invoiceBox != undefined) {
-		invoiceBox.map(async (invoice) => {
+	// Send invoiceBox to package/create endpoint
+	try {
+		const response = await fetch('http://localhost:3000/package/create', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ invoiceBox }),
+		})
+		const data = await response.json()
+		console.log(data)
+	} catch (error) {
+		console.error('Error:', error)
+	}
+
+	// console.log(JSON.stringify(invoiceBox))
+
+	// Check if invoiceBox is defined
+	if (invoiceBox) {
+		for (const invoice of invoiceBox) {
 			let type = invoice.Transaction.GeneralData._attributes.Type
 			let invoiceNumber = invoice.Transaction.GeneralData._attributes.NCF
 
-			//Pass Json to Xml
+			// Pass Json to Xml
 			const invoiceXML = json2xml(invoice, { compact: true, spaces: 4 })
-
-			// try {
-			// 	await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
-			// 	// res.status(200).send('Datos enviados exitosamente')
-			// } catch (error) {
-			// 	res.status(500).send('Error al enviar datos')
-			// }
-		})
+			try {
+				await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
+				// res.status(200).send('Datos enviados exitosamente');
+			} catch (error) {
+				res.status(500).send('Error al enviar datos')
+			}
+		}
 	} else {
 		console.error('There are not invoices in the invoice box')
 	}
