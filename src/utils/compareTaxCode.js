@@ -19,6 +19,7 @@ function compareTaxCode(tax) {
 		SD: 'ITBIS',
 		SP: 'ITBIS',
 		ST: 'ISC',
+		E: 'EXENTO',
 	}
 
 	return taxMap[tax] || null

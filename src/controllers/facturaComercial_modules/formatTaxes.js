@@ -3,6 +3,21 @@ import { compareTaxCode } from '../../utils/compareTaxCode'
 import { compareQualifier } from '../../utils/compareQualifier'
 
 // Filter taxes by parent
+const getExentos = async (items) => {
+	//Filtrar Exentos
+	function filterExents(item) {
+		if (item.taxincluded == 'E ') {
+			return true
+		}
+		return false
+	}
+
+	const arrOfExentos = items.filter(filterExents)
+
+	return arrOfExentos
+}
+
+// Filter taxes by parent
 const filterTaxes = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 
@@ -25,6 +40,10 @@ const filterTaxes = async (invoiceNum, req, res) => {
 const formatTax = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
+
+	//EXENTOS ***
+	const arrExentosFiltered = await getExentos(items)
+
 	let totalAmount = 0
 
 	const taxesGrouped = []
@@ -49,6 +68,7 @@ const formatTax = async (invoiceNum, req, res) => {
 		SD: { 18: { amount: 0, base: 0, qualifier: '' } },
 		SP: { 18: { amount: 0, base: 0, qualifier: '' } },
 		ST: { 10: { amount: 0, base: 0, qualifier: '' } },
+		E: { 10: { amount: 0, base: 0, qualifier: '' } },
 	})
 
 	const amounts = initializeAmounts()
@@ -83,10 +103,34 @@ const formatTax = async (invoiceNum, req, res) => {
 		})
 	})
 
+	// Setting Amount FOR EXENTOS
+	arrExentosFiltered.forEach((item) => {
+		const type = item.taxincluded.replaceAll(' ', '')
+		const rate = '10'
+
+		if (amounts[type] && amounts[type][rate] !== undefined) {
+			amounts[type][rate].amount += 0
+			// amounts[type][rate].qualifier = 'EXENTO' // Assign qualifier
+		}
+
+		// Setting Base
+		arrFilterParents.forEach((itemParent) => {
+			const type = item.taxincluded.replaceAll(' ', '')
+			const rate = '10'
+
+			if (amounts[type] && amounts[type][rate] !== undefined) {
+				if (item.tranid == itemParent.tranid) amounts[type][rate].base += itemParent.amount
+			}
+		})
+	})
+
+	// Watch amounts
+	// console.log(amounts)
+
 	// Pushing object to taxesGrouped array
 	for (const type in amounts) {
 		for (const rate in amounts[type]) {
-			if (amounts[type][rate].amount > 0) {
+			if (amounts[type][rate].amount > 0 || amounts[type][rate].base > 0) {
 				taxesGrouped.push({
 					type2: type,
 					rate: rate,
@@ -106,7 +150,7 @@ const formatTax = async (invoiceNum, req, res) => {
 			Tax: {
 				_attributes: {
 					Type: compareTaxCode(item.type2),
-					Rate: item.rate,
+					Rate: '0.00',
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
 					Qualifier: compareQualifier(item.qualifier),

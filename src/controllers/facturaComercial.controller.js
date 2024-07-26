@@ -10,6 +10,7 @@ import { createPackage } from './package.controller'
 import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
 import { sendInvoice, sendInvoiceBavel } from './facturaComercial_modules/sendInvoice'
 import { taxLinked } from './facturaComercial_modules/taxLinked'
+import { exentLinked } from './facturaComercial_modules/exentLinked'
 
 //Utils
 import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
@@ -633,6 +634,9 @@ const filterProducts = async (invoiceNum, req, res) => {
 	const productsFormated = arrProductsFilteredByParent.map((item) => {
 		grossamount = grossamount + item.up
 
+		//new
+		const taxincluded = item.taxincluded.replaceAll(' ', '')
+
 		return {
 			Product: {
 				_attributes: {
@@ -650,7 +654,11 @@ const filterProducts = async (invoiceNum, req, res) => {
 				Discounts: {},
 				Taxes: [
 					{
-						Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+						Tax:
+							taxincluded === 'E'
+								? exentLinked(item.tranid, arrProductsFilteredByParent, item.amount)
+								: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+						// Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
 					},
 				],
 			},
