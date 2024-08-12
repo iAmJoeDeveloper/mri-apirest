@@ -4,12 +4,15 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+// Mongo Local
 const PORT = process.env.PORT || 3000
 const MONGO_URL = process.env.MONGO_URL
+// Mongo Atlas
+const URI = process.env.URI
 
 //DB Connection
 mongoose
-	.connect(MONGO_URL)
+	.connect(URI)
 	.then(() => {
 		console.log('Database is connected successfully.')
 		app.listen(PORT, () => {

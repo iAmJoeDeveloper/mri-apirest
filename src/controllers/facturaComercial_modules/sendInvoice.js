@@ -28,11 +28,12 @@ export async function sendInvoice(invoice, type) {
 const baseUrl = 'https://fileconnector.voxelgroup.net/outbox'
 
 export async function sendInvoiceBavel(invoice, type, invoiceNumber) {
+	// Monitoring sending data
 	// See the header
-	console.log(`${baseUrl}/${type}_${invoiceNumber}.xml`)
+	// console.log(`${baseUrl}/${type}_${invoiceNumber}.xml`)
 	// See what invoice in being sent
 	// console.log(JSON.stringify(invoice))
-	console.log(invoice)
+	// console.log(invoice)
 	//*************
 	// Activate
 	// try {

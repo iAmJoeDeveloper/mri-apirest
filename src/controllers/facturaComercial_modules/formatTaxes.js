@@ -141,6 +141,8 @@ const formatTax = async (invoiceNum, req, res) => {
 			}
 		}
 	}
+	// Watch taxesGrouped Array
+	// console.log(taxesGrouped)
 
 	// Adding Taxes to json format
 	const taxesFormated = taxesGrouped.map((item) => {
@@ -150,7 +152,7 @@ const formatTax = async (invoiceNum, req, res) => {
 			Tax: {
 				_attributes: {
 					Type: compareTaxCode(item.type2),
-					Rate: '0.00',
+					Rate: item.type2 == 'E' ? '0.00' : item.rate,
 					Base: item.base.toFixed(2),
 					Amount: item.amount.toFixed(2),
 					Qualifier: compareQualifier(item.qualifier),
