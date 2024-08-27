@@ -1,3 +1,4 @@
+import { text } from 'body-parser'
 import Package from '../models/packageModel'
 import { generateRandomString } from '../utils/randomStrings'
 import convert from 'xml-js'
@@ -6,9 +7,17 @@ import convert from 'xml-js'
 const createPackage = async (req, res) => {
 	const { invoiceBox } = req.body
 
+	// Set Entity
+	let entity = ''
+	invoiceBox.map((item) => {
+		entity = item.Transaction.Supplier._attributes.Company
+	})
+	// ----------
+
 	try {
 		const packageData = {
 			name: generateRandomString(10),
+			entity: entity,
 			status: 'pending',
 			tag: 'CM',
 			invoices: invoiceBox.map((invoice) => ({
@@ -69,22 +78,37 @@ const getPackageById = async (req, res) => {
 				let ncf = result.RespuestaConsultaTrackId.Encf._text
 				let code = result.RespuestaConsultaTrackId.Codigo._text
 				let estado = result.RespuestaConsultaTrackId.Estado._text
+				let textStatus
 
 				if (code == '1') {
 					// Estado "Aceptado"
-					return await updateInvoiceStatus(invoiceId, ncf)
+					textStatus = 'completed'
+					return await updateInvoiceStatus(invoiceId, ncf, textStatus)
+				} else if (code == '2') {
+					// Estado "Rechazado"
+					textStatus = 'rejected'
+					return await updateInvoiceStatus(invoiceId, ncf, textStatus)
+				} else if (code == '4') {
+					// Estado "Aceptado Condicional"
+					textStatus = 'conditional accepted'
+					return await updateInvoiceStatus(invoiceId, ncf, textStatus)
+				} else {
+					// Estado "Aceptado Condicional"
+					textStatus = 'pending'
+					return await updateInvoiceStatus(invoiceId, ncf, textStatus)
 				}
 			})
 		)
 
 		return res.status(200).json({ pack, results })
 	} catch (error) {
-		console.error('Error in getPackageById:', error)
+		// console.error('Error in getPackageById:', error)
+		console.error('Error in getPackageById:')
 		return res.status(500).json({ error: 'Internal server error' })
 	}
 }
 
-const updateInvoiceStatus = async (packageId, ncf) => {
+const updateInvoiceStatus = async (packageId, ncf, text) => {
 	try {
 		const result = await Package.updateOne(
 			{
@@ -92,7 +116,7 @@ const updateInvoiceStatus = async (packageId, ncf) => {
 				'invoices.ncf': ncf,
 			},
 			{
-				$set: { 'invoices.$.status': 'completed' },
+				$set: { 'invoices.$.status': text },
 			}
 		)
 
@@ -158,8 +182,9 @@ const fetchInvoiceStatus = async (invoice) => {
 
 		return json
 	} catch (error) {
-		console.error(`Error fetching status for invoice ${invoice.ncf}:`, error)
-		throw error // Re-throw the error so it can be handled by the calling function
+		console.error(`Error fetching status for invoice ${invoice.ncf}:`)
+		// throw error
+		// Re-throw the error so it can be handled by the calling function
 	}
 }
 

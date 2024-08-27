@@ -7,6 +7,7 @@ import config from './config'
 import invoicesRoutes from './routes/invoices.routes'
 import facturaRoutes from './routes/facturaComercial.routes'
 import packageRoutes from './routes/packages.routes'
+import qrcodesRoutes from './routes/qrcodes.routes'
 
 const app = express()
 
@@ -18,6 +19,6 @@ app.use(bodyParser.json())
 //settings
 // app.set('port', config.port)
 
-app.use(invoicesRoutes, facturaRoutes, packageRoutes)
+app.use(invoicesRoutes, facturaRoutes, packageRoutes, qrcodesRoutes)
 
 export default app
