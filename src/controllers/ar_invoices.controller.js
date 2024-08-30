@@ -3,92 +3,93 @@ import { json2xml, xml2json } from 'xml-js'
 import fs from 'fs'
 import path from 'path'
 
+//Others controllers
+import { createPackage } from './package.controller'
+
+//Modules
+import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
+import { sendInvoice, sendInvoiceBavel } from './facturaComercial_modules/sendInvoice'
+import { taxLinked } from './facturaComercial_modules/taxLinked'
+import { exentLinked } from './facturaComercial_modules/exentLinked'
+
+//Utils
+import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
+import { emptyTrim } from '../utils/emptyTrim'
+
+//BD
+import mongoose, { mongo } from 'mongoose'
+import Package from '../models/packageModel'
+import dotenv from 'dotenv'
+dotenv.config()
+const MONGO_URL = process.env.MONGO_URL
+
+let invoiceBox
+
 export const getBatchOfInvoices = async (req, res) => {
 	const invoice1 = req.params.invoice1
 	const invoice2 = req.params.invoice2
 	const crearFactura = req.params.createInvoice
 
 	const queryStructure = `SELECT invoice AS ref
-	,(
-		SELECT EXCHRATE
-		FROM CURREXCH
-		WHERE EXCHGREF = '00002758'
-		) AS ExchangeRate
-	,tipoingreso = '2 - IngresosFinancieros'
-	,tipopago = '2 - Credito'
-	,cif = (
+	,tipoingreso = '2'
+    ,tipopago = '2'
+    ,cif = (
 		SELECT PHONE
 		FROM entity
-		WHERE entityid IN (
-				SELECT ENTITYID
-				FROM BLDG
-				WHERE BLDGID = CMLEDG.BLDGID
-				)
+		WHERE ENTITYID = ARLEDG.ENTITYID
 		)
-	,company = (
+    , company = (
 		SELECT NAME
 		FROM entity
-		WHERE entityid IN (
-				SELECT ENTITYID
-				FROM BLDG
-				WHERE BLDGID = CMLEDG.BLDGID
-				)
-		)
-	,address = (
+		WHERE ENTITYID = ARLEDG.ENTITYID
+		
+    )
+    , address = (
 		SELECT ADDR1
 		FROM entity
-		WHERE entityid IN (
-				SELECT ENTITYID
-				FROM BLDG
-				WHERE BLDGID = CMLEDG.BLDGID
-				)
+		WHERE ENTITYID = ARLEDG.ENTITYID
 		)
-	,city = (
+    , city = (
 		SELECT CITY
 		FROM entity
-		WHERE entityid IN (
-				SELECT ENTITYID
-				FROM BLDG
-				WHERE BLDGID = CMLEDG.BLDGID
-				)
+		WHERE ENTITYID = ARLEDG.ENTITYID
 		)
 	,country = 'DOM'
 	,type = 'Phone'
 	,number = (
-		SELECT PHONENO
-		FROM BLDG
-		WHERE BLDGID = CMLEDG.BLDGID
+		SELECT MAINPHONE
+		FROM ACCOUNT
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-	,cliente_cif = (
+	,cliente_CIF = (
 		SELECT RNC
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		FROM ACCOUNT
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
 	,company2 = (
-		SELECT DBA
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		SELECT FILEASNAME
+		FROM ACCOUNT
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-	,address = (
+    ,address = (
 		SELECT ADDRESS
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		FROM ACCOUNTADDR
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-	,city = (
-		SELECT CITY
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
-		)
-	,country = 'DOM'
+	,City = ''
+	,Country = 'DOM'
 
-FROM cmledg 
-WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' AND srccode='ch' GROUP BY INVOICE,BLDGID, LEASID
+    FROM arledg
+WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' GROUP BY INVOICE, ACCOUNTID,ENTITYID
 ORDER BY invoice`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
 
-	createInvoice(result.recordset, crearFactura)
+	// createInvoice(result.recordset, crearFactura)
+
+	console.log('llegue hasta aquí')
+	console.log(result.recordset)
 
 	res.json(result.recordset)
 }
@@ -115,10 +116,10 @@ export const getHeaders = async (invoiceNum, req, res) => {
     (
 		SELECT exchrate
 		FROM currexch
-		WHERE exchgref = '00002758'
+		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
-    tipoingreso = '2 - IngresosFinancieros',
-	tipopago = '2 - Credito',
+    tipoingreso = '2',
+	tipopago = '2',
     linesperprintedpage = '',
 	supplierid = '',
     cif = (
@@ -208,7 +209,11 @@ export const getHeaders = async (invoiceNum, req, res) => {
 		WHERE inccat = cmledg.inccat
 	),
 	amount = tranamt,
-	Qualifier = ''
+	(
+		SELECT REFDESC
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	) AS qualifier
     FROM cmledg 
     WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
@@ -246,10 +251,10 @@ export const getItems = async (invoiceNum, req, res) => {
     (
 		SELECT exchrate
 		FROM currexch
-		WHERE exchgref = '00002758'
+		WHERE exchgref = cmledg.bcexchgref
 	) AS exchangerate,
-    tipoingreso = '2 - IngresosFinancieros',
-	tipopago = '2 - Credito',
+    tipoingreso = '2',
+	tipopago = '2',
     linesperprintedpage = '',
 	supplierid = '',
     cif = (
@@ -339,7 +344,11 @@ export const getItems = async (invoiceNum, req, res) => {
 		WHERE inccat = cmledg.inccat
 	),
 	amount = tranamt,
-	Qualifier = ''
+	(
+		SELECT REFDESC
+		FROM rtax
+		WHERE inccat = cmledg.inccat
+	) AS qualifier
     FROM cmledg 
     WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
@@ -348,8 +357,6 @@ export const getItems = async (invoiceNum, req, res) => {
 
 	//console.log(result.recordset)
 	//res.json(result.recordset)
-
-	// -----------------------------------------
 
 	return items.recordset
 }
@@ -378,6 +385,10 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 			headerFactura.map((invoice) => {
 				const invoiceDate = new Date(invoice.date)
+
+				const dueDate = new Date(invoiceDate)
+				dueDate.setDate(dueDate.getDate() + 7)
+
 				const invoiceExpirationDate = new Date(invoice.ncfexpirationdate)
 				const template = {
 					_declaration: {
@@ -392,23 +403,19 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						},
 						GeneralData: {
 							_attributes: {
-								ref: invoice.ref,
+								Ref: invoice.ref,
 								Type: 'FacturaComercial',
 								Date:
 									invoiceDate.getFullYear() +
 									'-' +
-									invoiceDate.getMonth() +
+									(invoiceDate.getMonth() + 1).toString().padStart(2, '0') +
 									'-' +
-									invoiceDate.getDate(),
+									invoiceDate.getDate().toString().padStart(2, '0'),
 								Currency: invoice.currency,
-								NCF: invoice.ncf,
-								NCFExpirationDate:
-									invoiceExpirationDate.getFullYear() +
-									'-' +
-									invoiceExpirationDate.getMonth() +
-									'-' +
-									invoiceExpirationDate.getDate(),
 								TaxIncluded: 'false',
+								NCF: invoice.ncf.trim(),
+								NCFExpirationDate: '2025-12-31',
+								ExchangeRate: invoice.exchangerate.toFixed(2),
 							},
 							PublicAdministration: {
 								DOM: {
@@ -424,8 +431,8 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							_attributes: {
 								SupplierID: '',
 								Email: '',
-								CIF: invoice.cif,
-								Company: invoice.company,
+								CIF: emptyTrim(invoice.cif),
+								Company: invoice.company.trim(),
 								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
@@ -435,9 +442,9 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						},
 						Client: {
 							_attributes: {
-								CIF: invoice.cliente_cif,
-								Email: '',
-								Company: invoice.company2,
+								CIF: invoice.cliente_cif.trim(),
+								Email: '' === '' ? 'tecnologia@bluemall.com.do' : '',
+								Company: sanitizeCompanyName(invoice.company2).trim(),
 								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
@@ -445,13 +452,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Country: 'DOM',
 							},
 						},
-						References: {
-							Reference: {
-								_attributes: {
-									PORef: '',
-								},
-							},
-						},
+						References: {},
 						ProductList: [
 							{
 								//Must be Multiple ⚠️
@@ -464,8 +465,13 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							DueDate: {
 								_attributes: {
 									PaymentID: 'Venta a Credito',
-									Amount: grossamount + totalAmount,
-									Date: '',
+									Amount: (grossamount + totalAmount).toFixed(2),
+									Date:
+										dueDate.getFullYear() +
+										'-' +
+										(dueDate.getMonth() + 1).toString().padStart(2, '0') +
+										'-' +
+										dueDate.getDate().toString().padStart(2, '0'),
 								},
 							},
 						},
@@ -483,7 +489,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Discounts: '',
 								SubTotal: grossamount.toFixed(2),
 								Tax: totalAmount.toFixed(2),
-								Total: grossamount + totalAmount,
+								Total: (grossamount + totalAmount).toFixed(2),
 							},
 						},
 					},
@@ -491,11 +497,13 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				//Pass Template to Json
 				const json = JSON.stringify(template)
 				//console.log(template)
-				arrOfInvoices.push(template)
 
 				//Pass Json to Xml
 				const formatoXml = json2xml(json, { compact: true, spaces: 4 })
 				//Mostrar factura por consola
+
+				//Push xml into arrOfInvoices
+				arrOfInvoices.push(template)
 				//console.log(formatoXml)
 
 				//Exportar en archivo XML
@@ -519,65 +527,76 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 		})
 	)
 
-	//console.log(arrOfInvoices)
+	//See what is inside of arrOfInvoices
+	// console.log(arrOfInvoices)
+
+	invoiceBox = arrOfInvoices
+
+	// return arrOfInvoices
 	//************
 }
 
-//----------------- MODULES --------------
-//TAX LINKAGE
-const taxLinked = (productTranid, arrTaxes, productBase) => {
-	let arraicito = []
-	arrTaxes.map((tax) => {
-		if (tax.parent == productTranid) {
-			arraicito.push({
-				_attributes: { Type: tax.type2, Rate: tax.rate, Base: productBase, Amount: tax.amount },
-			})
-		}
-	})
+//Send Invoices
+export const sendInvoices = async (req, res) => {
+	// Call createPackage to save array in DB
+	// try {
+	// 	await createPackage(invoiceBox)
+	// } catch (error) {
+	// 	console.error('Error saving package to DB:', error)
+	// 	return res.status(500).send('Error saving package to DB')
+	// }
 
-	return arraicito
-}
-// ----------------
-
-//FILTER TAXES
-const filterTaxes = async (invoiceNum, req, res) => {
-	const items = await getItems(invoiceNum)
-
-	//Filtrar Impuestos
-	function filterTaxesByParent(item) {
-		if (item.parent != null) {
-			return true
-		}
-		return false
+	// Send invoiceBox to package/create endpoint
+	try {
+		const response = await fetch('http://localhost:3000/package/create', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ invoiceBox }),
+		})
+		const data = await response.json()
+		console.log(data)
+	} catch (error) {
+		console.error('Error:', error)
 	}
 
-	const arrTaxesFilteredByParent = items.filter(filterTaxesByParent)
+	// console.log(JSON.stringify(invoiceBox))
 
-	return arrTaxesFilteredByParent
-}
+	// Check if invoiceBox is defined
+	if (invoiceBox) {
+		for (const invoice of invoiceBox) {
+			let type = invoice.Transaction.GeneralData._attributes.Type
+			let invoiceNumber = invoice.Transaction.GeneralData._attributes.NCF
 
-//FORMAT TAXES
-const formatTax = async (invoiceNum, req, res) => {
-	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
-	let totalAmount = 0
-	// Agregar Taxes a formato json
-	const taxesFormated = arrTaxesFilteredByParent.map((item) => {
-		totalAmount = totalAmount + item.amount
-		return {
-			Tax: {
-				_attributes: {
-					Type: item.type2,
-					Rate: item.rate,
-					Base: item.base,
-					Amount: item.amount,
-				},
-			},
+			// Pass Json to Xml
+			const invoiceXML = json2xml(invoice, { compact: true, spaces: 4 })
+			try {
+				await sendInvoiceBavel(invoiceXML, type, invoiceNumber)
+				// res.status(200).send('Datos enviados exitosamente');
+			} catch (error) {
+				res.status(500).send('Error al enviar datos')
+			}
 		}
-	})
-
-	return [taxesFormated, totalAmount]
+	} else {
+		console.error('There are not invoices in the invoice box')
+	}
 }
-//---------------------------
+
+//Get List of Invoices
+const getListOfInvoices = async (req, res) => {
+	try {
+		await fetch('https://fileconnector.voxelgroup.net/inbox/', {
+			headers: {
+				Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
+			},
+		}).then((res) => console.log(''))
+	} catch (error) {
+		console.log('Error from API Get: ' + error)
+	}
+}
+
+//----------------- MODULES --------------
 
 //FILTER PRODUCTS
 const filterProducts = async (invoiceNum, req, res) => {
@@ -599,12 +618,15 @@ const filterProducts = async (invoiceNum, req, res) => {
 	const productsFormated = arrProductsFilteredByParent.map((item) => {
 		grossamount = grossamount + item.up
 
+		//new
+		const taxincluded = item.taxincluded.replaceAll(' ', '')
+
 		return {
 			Product: {
 				_attributes: {
-					supplierSKU: item.suppliersku,
+					SupplierSKU: item.suppliersku,
 					EAN: '',
-					item: item.item,
+					Item: item.item.trim(),
 					Qty: '1',
 					MU: '',
 					UP: item.up,
@@ -613,12 +635,14 @@ const filterProducts = async (invoiceNum, req, res) => {
 					NetAmount: item.amount,
 					SysLineType: item.syslinetype,
 				},
-				Discounts: {
-					Discount: '',
-				},
+				Discounts: {},
 				Taxes: [
 					{
-						Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+						Tax:
+							taxincluded === 'E'
+								? exentLinked(item.tranid, arrProductsFilteredByParent, item.amount)
+								: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+						// Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
 					},
 				],
 			},
@@ -627,6 +651,3 @@ const filterProducts = async (invoiceNum, req, res) => {
 
 	return [productsFormated, grossamount]
 }
-
-// Sumar grossamount de productos
-//filter products
