@@ -41,7 +41,7 @@ export const createUser = async (req, res) => {
 		let validation = await validate(username, email, password)
 		const [user, error] = await validateUserExist(username, email)
 
-		console.log(user, error)
+		// console.log(user, error)
 
 		if (validation == '' && !user) {
 			let pass = await bcryptjs.hash(password, 8)
@@ -65,7 +65,6 @@ export const createUser = async (req, res) => {
 }
 
 export const login = async (req, res) => {
-	console.log('LLegue al login')
 	try {
 		const { username, email, password } = req.body
 		let validation = await validate(username, email, password)

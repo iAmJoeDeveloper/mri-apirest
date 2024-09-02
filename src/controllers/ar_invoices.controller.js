@@ -7,7 +7,7 @@ import path from 'path'
 import { createPackage } from './package.controller'
 
 //Modules
-import { formatTax, filterTaxes } from './facturaComercial_modules/formatTaxes'
+import { formatTax, filterTaxes } from './ar_invoices_modules/formatTaxes'
 import { sendInvoice, sendInvoiceBavel } from './facturaComercial_modules/sendInvoice'
 import { taxLinked } from './facturaComercial_modules/taxLinked'
 import { exentLinked } from './facturaComercial_modules/exentLinked'
@@ -80,142 +80,111 @@ export const getBatchOfInvoices = async (req, res) => {
 	,Country = 'DOM'
 
     FROM arledg
-WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' GROUP BY INVOICE, ACCOUNTID,ENTITYID
+WHERE invoice BETWEEN '${invoice1}' AND '${invoice2}' AND srccode='ch' GROUP BY INVOICE, ACCOUNTID,ENTITYID
 ORDER BY invoice`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
 
-	// createInvoice(result.recordset, crearFactura)
-
-	console.log('llegue hasta aquí')
-	console.log(result.recordset)
+	createInvoice(result.recordset, crearFactura)
 
 	res.json(result.recordset)
 }
 
 export const getHeaders = async (invoiceNum, req, res) => {
 	const queryStructure = `
-    SELECT TOP 1 invoice AS ref,
+	SELECT TOP 1 invoice AS ref,
 	tranid,
 	parenttranid AS parent,
 	refnmbr,
-    trandate AS date,
-    currcode AS currency,
-    rtaxgrpid AS taxincluded,
-    govinvc AS ncf,
-    (
-        SELECT TOP 1 vigencia 
-        FROM numerofactura 
-        WHERE entityid IN (
-            SELECT entityid 
-            FROM bldg 
-            WHERE bldgid = cmledg.bldgid
-            )
-    ) AS ncfexpirationdate,
-    (
-		SELECT exchrate
+	trandate AS date,
+	currcode AS currency,
+	artaxgrpid AS taxincluded,
+	govinvc AS ncf,
+	(
+	    SELECT TOP 1 vigencia
+	    FROM numerofactura
+	    WHERE entityid = arledg.entityid
+	) AS ncfexpirationdate,
+	(
+		SELECT TOP 1 exchrate
 		FROM currexch
-		WHERE exchgref = cmledg.bcexchgref
+		WHERE bcexchgref = arledg.bcexchgref
 	) AS exchangerate,
-    tipoingreso = '2',
+	tipoingreso = '2',
 	tipopago = '2',
-    linesperprintedpage = '',
+	linesperprintedpage = '',
 	supplierid = '',
-    cif = (
+	cif = (
 		SELECT phone
 		FROM entity
-		WHERE entityid IN (
-				SELECT entityid
-				FROM bldg
-				WHERE bldgid = cmledg.bldgid
-				)
+		WHERE entityid = arledg.entityid
 		),
-    company = (
-        SELECT name
-        FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
-        ),
-    address = (
-        SELECT addr1
-        FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
-        ),
-    city = (
-        SELECT city
-        FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
-        ),
-    country = 'DOM',
-    type = 'Phone',
-    number = (
-		SELECT phoneno
-		FROM bldg
-		WHERE bldgid = cmledg.bldgid
+	company = (
+	    SELECT name
+	    FROM entity
+	    WHERE entityid = arledg.entityid
+	    ),
+	address = (
+	    SELECT addr1
+	    FROM entity
+	    WHERE entityid = arledg.entityid
+	    ),
+	city = (
+	    SELECT city
+	    FROM entity
+	    WHERE entityid = arledg.entityid
+	    ),
+	country = 'DOM',
+	type = 'Phone',
+	number = (
+		SELECT mainphone
+		FROM account
+		WHERE accountid = arledg.accountid
 		),
-    cliente_cif = (
-        SELECT rnc
-        FROM leas
-        WHERE leasid = cmledg.leasid
-        ),
-    company2 = (
-        SELECT dba
-        FROM leas
-        WHERE leasid = cmledg.leasid
-        ),
-    address = (
-        SELECT address
-        FROM leas
-        WHERE leasid = cmledg.leasid
-        ),
-    city = (
-        SELECT city
-        FROM leas
-        WHERE leasid = cmledg.leasid
-        ),
-    country = 'DOM',
-    inccat AS suppliersku,
-    item = (
-		SELECT descrptn
-		FROM inch
-		WHERE inccat = cmledg.inccat
-		),
-    qty = '1',
-    up = TRANAMT,
-    total = '',
-    netamount = '',
-    syslinetype = 'GenericServices',
+	cliente_cif = (
+	    SELECT rnc
+	    FROM account
+	    WHERE accountid = arledg.accountid
+	    ),
+	company2 = (
+	    SELECT fileasname
+	    FROM account
+	    WHERE accountid = arledg.accountid
+	    ),
+	address = (
+	    SELECT address
+	    FROM accountaddr
+	    WHERE accountid = arledg.accountid
+	    ),
+	city = '',
+	country = 'DOM',
+	arinccat,
+	item = '',
+	qty = '1',
+	up = TRANAMT,
+	total = '',
+	netamount = '',
+	syslinetype = 'GenericServices',
 	type2 = (
-		SELECT rtaxid
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		SELECT artaxid
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	),
 	base = '',
 	rate = (
 		SELECT rtaxperc
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	),
 	amount = tranamt,
 	(
-		SELECT REFDESC
-		FROM rtax
-		WHERE inccat = cmledg.inccat
-	) AS qualifier
-    FROM cmledg 
-    WHERE invoice='${invoiceNum}' AND srccode='ch'`
+		SELECT refdesc
+		FROM artax
+		WHERE arinccat = arledg.arinccat
+		)
+	FROM arledg
+	WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
 	const pool = await getConnection()
 	const result = await pool.request().query(queryStructure)
@@ -237,21 +206,17 @@ export const getItems = async (invoiceNum, req, res) => {
 	refnmbr,
     trandate AS date,
     currcode AS currency,
-    rtaxgrpid AS taxincluded,
+    artaxgrpid AS taxincluded,
     govinvc AS ncf,
     (
-        SELECT TOP 1 vigencia 
+        SELECT TOP 1  vigencia 
         FROM numerofactura 
-        WHERE entityid IN (
-            SELECT entityid 
-            FROM bldg 
-            WHERE bldgid = cmledg.bldgid
-            )
+        WHERE entityid = arledg.entityid
     ) AS ncfexpirationdate,
     (
-		SELECT exchrate
+		SELECT TOP 1 exchrate
 		FROM currexch
-		WHERE exchgref = cmledg.bcexchgref
+		WHERE bcexchgref = arledg.bcexchgref
 	) AS exchangerate,
     tipoingreso = '2',
 	tipopago = '2',
@@ -260,96 +225,72 @@ export const getItems = async (invoiceNum, req, res) => {
     cif = (
 		SELECT phone
 		FROM entity
-		WHERE entityid IN (
-				SELECT entityid
-				FROM bldg
-				WHERE bldgid = cmledg.bldgid
-				)
+		WHERE entityid = arledg.entityid
 		),
     company = (
         SELECT name
         FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
+        WHERE entityid = arledg.entityid
         ),
     address = (
         SELECT addr1
         FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
+        WHERE entityid = arledg.entityid
         ),
     city = (
         SELECT city
         FROM entity
-        WHERE entityid IN (
-                SELECT entityid
-                FROM bldg
-                WHERE bldgid = cmledg.bldgid
-                )
+        WHERE entityid = arledg.entityid
         ),
     country = 'DOM',
     type = 'Phone',
     number = (
-		SELECT phoneno
-		FROM bldg
-		WHERE bldgid = cmledg.bldgid
+		SELECT mainphone
+		FROM account
+		WHERE accountid = arledg.accountid
 		),
     cliente_cif = (
         SELECT rnc
-        FROM leas
-        WHERE leasid = cmledg.leasid
+	    FROM account
+	    WHERE accountid = arledg.accountid
         ),
-    company = (
-        SELECT dba
-        FROM leas
-        WHERE leasid = cmledg.leasid
+    company2 = (
+      	SELECT fileasname
+	    FROM account
+	    WHERE accountid = arledg.accountid
         ),
     address = (
-        SELECT address
-        FROM leas
-        WHERE leasid = cmledg.leasid
+    	SELECT address
+		FROM accountaddr
+		WHERE accountid = arledg.accountid
         ),
-    city = (
-        SELECT city
-        FROM leas
-        WHERE leasid = cmledg.leasid
-        ),
+    city = '',
     country = 'DOM',
-    inccat as suppliersku,
-    item = (
-		SELECT descrptn
-		FROM inch
-		WHERE inccat = cmledg.inccat
-		),
+    arinccat as suppliersku,
+    item = '',
     qty = '1',
     up = TRANAMT,
     total = '',
     netamount = '',
     syslinetype = 'GenericServices',
 	type2 = (
-		SELECT rtaxid
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		SELECT artaxid
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	),
 	base = '',
 	rate = (
 		SELECT rtaxperc
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	),
 	amount = tranamt,
 	(
-		SELECT REFDESC
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		SELECT refdesc
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	) AS qualifier
-    FROM cmledg 
+    FROM arledg 
     WHERE invoice='${invoiceNum}' AND srccode='ch'`
 
 	const pool = await getConnection()
@@ -364,7 +305,7 @@ export const getItems = async (invoiceNum, req, res) => {
 export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 	//Crear folder
 	let timestamp = Date.now()
-	let dir = `facturaComercial-${timestamp}`
+	let dir = `AR - facturaComercial-${timestamp}`
 	//ACTIVAR 1/2 IMPRESION DE FACTURAS
 	if (crearFactura) {
 		if (!fs.existsSync(dir)) {
@@ -403,7 +344,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						},
 						GeneralData: {
 							_attributes: {
-								Ref: invoice.ref,
+								Ref: invoice.ref.trim(),
 								Type: 'FacturaComercial',
 								Date:
 									invoiceDate.getFullYear() +
@@ -510,7 +451,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				//ACTIVAR 2/2 IMPRESION DE FACTURAS
 				if (crearFactura) {
 					fs.writeFile(
-						`${dir}/FacturaComercial_${invoice.ref}_${timestamp}.xml`,
+						`${dir}/FacturaComercial_${invoice.ref.trim()}_${timestamp}.xml`,
 						formatoXml,
 						(error) => {
 							if (error) {
