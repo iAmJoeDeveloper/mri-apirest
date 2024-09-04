@@ -1,6 +1,6 @@
 import { getItems } from '../ar_invoices.controller'
 import { compareTaxCode } from '../../utils/compareTaxCode'
-import { compareQualifier } from '../../utils/compareQualifier'
+import { compareQualifier } from '../../utils/compareQualifier_ar'
 
 // Filter taxes by parent
 const getExentos = async (items) => {
@@ -148,8 +148,6 @@ const formatTax = async (invoiceNum, req, res) => {
 	// Adding Taxes to json format
 	const taxesFormated = taxesGrouped.map((item) => {
 		totalAmount += item.amount
-		console.log('aja')
-		console.log(item)
 		return {
 			Tax: {
 				_attributes: {

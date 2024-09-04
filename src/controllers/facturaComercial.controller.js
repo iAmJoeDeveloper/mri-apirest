@@ -380,7 +380,7 @@ export const getItems = async (invoiceNum, req, res) => {
 export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 	//Crear folder
 	let timestamp = Date.now()
-	let dir = `facturaComercial-${timestamp}`
+	let dir = `CM - facturaComercial-${timestamp}`
 	//ACTIVAR 1/2 IMPRESION DE FACTURAS
 	if (crearFactura) {
 		if (!fs.existsSync(dir)) {
@@ -554,17 +554,9 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
-	// Call createPackage to save array in DB
-	// try {
-	// 	await createPackage(invoiceBox)
-	// } catch (error) {
-	// 	console.error('Error saving package to DB:', error)
-	// 	return res.status(500).send('Error saving package to DB')
-	// }
-
 	// Send invoiceBox to package/create endpoint
 	try {
-		const response = await fetch('http://localhost:3000/package/create', {
+		const response = await fetch('http://localhost:3000/package/create/CM', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

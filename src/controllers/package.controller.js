@@ -6,6 +6,9 @@ import convert from 'xml-js'
 // Controlador para crear un nuevo paquete
 const createPackage = async (req, res) => {
 	const { invoiceBox } = req.body
+	const category = req.params.category
+	console.log('CREAR PAQUETE')
+	console.log(invoiceBox)
 
 	// Set Entity
 	let entity = ''
@@ -19,7 +22,7 @@ const createPackage = async (req, res) => {
 			name: generateRandomString(10),
 			entity: entity,
 			status: 'pending',
-			tag: 'CM',
+			tag: category,
 			invoices: invoiceBox.map((invoice) => ({
 				ncf: invoice.Transaction.GeneralData._attributes.NCF,
 				ref: invoice.Transaction.GeneralData._attributes.Ref,

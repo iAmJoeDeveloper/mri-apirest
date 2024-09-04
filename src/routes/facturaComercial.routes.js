@@ -11,9 +11,9 @@ const router = Router()
 
 router.get('/factura/batch/:invoice1/:invoice2/:createInvoice?', getBatchOfInvoices)
 
-router.get('/facturas', getHeaders)
+router.get('/facturas', getHeaders) // Out of using - It is been using inside controller
 
-router.get('/createFactura/:datas', createInvoice)
+router.get('/createFactura/:datas', createInvoice) // Out of using - It is been using inside controller
 
 router.get('/facturas/sendInvoices', sendInvoices)
 

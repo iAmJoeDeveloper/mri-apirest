@@ -160,7 +160,11 @@ export const getHeaders = async (invoiceNum, req, res) => {
 	city = '',
 	country = 'DOM',
 	arinccat,
-	item = '',
+	item = (
+		SELECT descrptn
+		FROM arinch
+		WHERE arinccat = arledg.arinccat
+	),
 	qty = '1',
 	up = TRANAMT,
 	total = '',
@@ -267,7 +271,11 @@ export const getItems = async (invoiceNum, req, res) => {
     city = '',
     country = 'DOM',
     arinccat as suppliersku,
-    item = '',
+    item = (
+		SELECT descrptn
+		FROM arinch
+		WHERE arinccat = arledg.arinccat
+	),
     qty = '1',
     up = TRANAMT,
     total = '',
@@ -457,7 +465,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							if (error) {
 								console.log(error)
 							}
-							console.log(`Factura ${invoice.ref} creada correctamente`)
+							console.log(`Factura ${invoice.ref.trim()} creada correctamente`)
 						}
 					)
 				}
@@ -479,17 +487,9 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
-	// Call createPackage to save array in DB
-	// try {
-	// 	await createPackage(invoiceBox)
-	// } catch (error) {
-	// 	console.error('Error saving package to DB:', error)
-	// 	return res.status(500).send('Error saving package to DB')
-	// }
-
 	// Send invoiceBox to package/create endpoint
 	try {
-		const response = await fetch('http://localhost:3000/package/create', {
+		const response = await fetch('http://localhost:3000/package/create/AR', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

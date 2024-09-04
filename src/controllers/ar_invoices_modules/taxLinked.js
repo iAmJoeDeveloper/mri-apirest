@@ -1,5 +1,5 @@
 import { compareTaxCode } from '../../utils/compareTaxCode'
-import { compareQualifier } from '../../utils/compareQualifier'
+import { compareQualifier } from '../../utils/compareQualifier_ar'
 
 // Tax Linkage
 const taxLinked = (productTranid, arrTaxes, productBase) => {
