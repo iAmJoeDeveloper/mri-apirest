@@ -71,7 +71,7 @@ export const getBatchOfInvoices = async (req, res) => {
 		FROM ACCOUNT
 		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-    ,address2 = (
+    ,address = (
 		SELECT ADDRESS
 		FROM ACCOUNTADDR
 		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
@@ -152,7 +152,7 @@ export const getHeaders = async (invoiceNum, req, res) => {
 	    FROM account
 	    WHERE accountid = arledg.accountid
 	    ),
-	address2 = (
+	address = (
 	    SELECT address
 	    FROM accountaddr
 	    WHERE accountid = arledg.accountid
@@ -263,7 +263,7 @@ export const getItems = async (invoiceNum, req, res) => {
 	    FROM account
 	    WHERE accountid = arledg.accountid
         ),
-    address2 = (
+    address = (
     	SELECT address
 		FROM accountaddr
 		WHERE accountid = arledg.accountid
@@ -394,7 +394,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								CIF: invoice.cliente_cif.trim(),
 								Email: '' === '' ? 'tecnologia@bluemall.com.do' : '',
 								Company: sanitizeCompanyName(invoice.company2).trim(),
-								Address: invoice.address2,
+								Address: invoice.address,
 								City: invoice.city,
 								PC: '',
 								Province: '',
