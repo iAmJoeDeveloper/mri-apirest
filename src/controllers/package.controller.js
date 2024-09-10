@@ -15,6 +15,7 @@ const createPackage = async (req, res) => {
 	invoiceBox.map((item) => {
 		entity = item.Transaction.Supplier._attributes.Company
 	})
+
 	// ----------
 
 	try {

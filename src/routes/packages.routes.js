@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { verifyUser } from '../middleware/Auth'
 import Package from '../models/packageModel'
 
 const { getPackages, createPackage, getPackageById } = require('../controllers/package.controller')

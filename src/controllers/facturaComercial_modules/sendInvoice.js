@@ -35,22 +35,22 @@ export async function sendInvoiceBavel(invoice, type, invoiceNumber) {
 	// console.log(invoice)
 	//*************
 	// Activate
-	try {
-		const response = await fetch(`${baseUrl}/${type}_${invoiceNumber}.xml`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/xml',
-				Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
-			},
-			body: invoice,
-		})
-		// Verifica si la respuesta es satisfactoria (código de estado en el rango 200-299)
-		if (!response.ok) {
-			throw new Error('Network response with a Error: ' + response.statusText)
-		}
-		const data = await response.json()
-		console.log('Success:', data)
-	} catch (error) {
-		console.error('Error:', error)
-	}
+	// try {
+	// 	const response = await fetch(`${baseUrl}/${type}_${invoiceNumber}.xml`, {
+	// 		method: 'POST',
+	// 		headers: {
+	// 			'Content-Type': 'application/xml',
+	// 			Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
+	// 		},
+	// 		body: invoice,
+	// 	})
+	// 	// Verifica si la respuesta es satisfactoria (código de estado en el rango 200-299)
+	// 	if (!response.ok) {
+	// 		throw new Error('Network response with a Error: ' + response.statusText)
+	// 	}
+	// 	const data = await response.json()
+	// 	console.log('Success:', data)
+	// } catch (error) {
+	// 	console.error('Error:', error)
+	// }
 }

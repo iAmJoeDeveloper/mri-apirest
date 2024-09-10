@@ -364,7 +364,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								TaxIncluded: 'false',
 								NCF: invoice.ncf.trim(),
 								NCFExpirationDate: '2025-12-31',
-								ExchangeRate: invoice.exchangerate.toFixed(2),
+								ExchangeRate: invoice.exchangerate ? invoice.exchangerate.toFixed(2) : '',
 							},
 							PublicAdministration: {
 								DOM: {

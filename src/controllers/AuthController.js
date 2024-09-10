@@ -71,6 +71,7 @@ export const login = async (req, res) => {
 
 		if (validation == '') {
 			let info = await User.findOne({ username: username })
+
 			console.log('Usuario encontrado: ' + info)
 			if (info.length == 0 || !(await bcryptjs.compare(password, info.password))) {
 				return res.status(404).json({ status: false, errors: ['User does not exist'] })
@@ -81,6 +82,15 @@ export const login = async (req, res) => {
 			})
 
 			const user = { id: info._id, name: info.username, email: info.email, token: token }
+
+			// Guardar el token en una cookie HTTP-only
+			// res.cookie('mri_token', token, {
+			// 	httpOnly: true,
+			// 	secure: process.env.NODE_ENV === 'production',
+			// 	sameSite: 'strict',
+			// 	maxAge: 1000 * 60 * 60,
+			// })
+
 			return res.status(200).json({ status: true, data: user, message: 'Access Successful' })
 		} else {
 			return res.status(400).json({ status: false, message: validation })

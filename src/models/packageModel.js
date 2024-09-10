@@ -18,7 +18,7 @@ const PackageSchema = new Schema(
 		name: { type: String, required: true },
 		entity: { type: String, required: true },
 		status: { type: String, enum: ['pending', 'completed', 'rejected'], required: true },
-		tag: { type: String, enum: ['AR', 'CM'], required: true },
+		tag: { type: String, enum: ['AR', 'CM', 'NC'], required: true },
 		invoices: [InvoiceSchema],
 	},
 	{

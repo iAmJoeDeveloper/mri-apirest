@@ -10,6 +10,9 @@ import packageRoutes from './routes/packages.routes'
 import qrcodesRoutes from './routes/qrcodes.routes'
 import usersRoutes from './routes/Auth.routes'
 import arRoutes from './routes/ar_invoices.routes'
+import ncRoutes from './routes/nc_invoices.routes'
+
+import cookieParser from 'cookie-parser'
 
 const app = express()
 
@@ -18,9 +21,19 @@ app.use(cors())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
+app.use(cookieParser())
+
 //settings
 // app.set('port', config.port)
 
-app.use(invoicesRoutes, facturaRoutes, packageRoutes, qrcodesRoutes, usersRoutes, arRoutes)
+app.use(
+	invoicesRoutes,
+	facturaRoutes,
+	packageRoutes,
+	qrcodesRoutes,
+	usersRoutes,
+	arRoutes,
+	ncRoutes
+)
 
 export default app

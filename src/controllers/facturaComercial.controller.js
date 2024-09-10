@@ -86,7 +86,7 @@ export const getBatchOfInvoices = async (req, res) => {
 		FROM LEAS
 		WHERE LEASID = CMLEDG.LEASID
 		)
-	,address = (
+	,address2 = (
 		SELECT ADDRESS
 		FROM LEAS
 		WHERE LEASID = CMLEDG.LEASID
@@ -191,7 +191,7 @@ export const getHeaders = async (invoiceNum, req, res) => {
         FROM leas
         WHERE leasid = cmledg.leasid
         ),
-    address = (
+    address2 = (
         SELECT address
         FROM leas
         WHERE leasid = cmledg.leasid
@@ -326,7 +326,7 @@ export const getItems = async (invoiceNum, req, res) => {
         FROM leas
         WHERE leasid = cmledg.leasid
         ),
-    address = (
+    address2 = (
         SELECT address
         FROM leas
         WHERE leasid = cmledg.leasid
@@ -387,7 +387,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 			fs.mkdirSync(dir)
 		}
 	}
-	//***************** */
+	//******************/
 
 	const arrOfInvoices = []
 
@@ -461,7 +461,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								CIF: invoice.cliente_cif.trim(),
 								Email: '' === '' ? 'tecnologia@bluemall.com.do' : '',
 								Company: sanitizeCompanyName(invoice.company2).trim(),
-								Address: invoice.address,
+								Address: invoice.address2,
 								City: invoice.city,
 								PC: '',
 								Province: '',

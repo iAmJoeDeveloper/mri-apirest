@@ -31,7 +31,7 @@ const creatingQR = async (entity, mriInvoiceNumber, ncf, url, fechaFirma, codigo
 	try {
 		// Generate QR as a buffer
 		const qrBuffer = await QRCode.toBuffer(url, {
-			width: 150,
+			width: 200,
 			color: {
 				dark: '#000', // Black dots
 				light: '#0000', // Transparent background
@@ -42,7 +42,7 @@ const creatingQR = async (entity, mriInvoiceNumber, ncf, url, fechaFirma, codigo
 		const qrImage = await Jimp.read(qrBuffer)
 
 		// Create a image with white background to the text
-		const font = await Jimp.loadFont(Jimp.FONT_SANS_12_BLACK)
+		const font = await Jimp.loadFont(Jimp.FONT_SANS_14_BLACK)
 
 		// Define margins
 		const leftMargin = 10
@@ -196,42 +196,6 @@ const generate = async (req, res) => {
 		console.error(`Error in getPackageById: ${id}`)
 		return res.status(500).json({ error: 'Internal server error' })
 	}
-
-	//---------------------------------------
-
-	// const { value } = req.params
-	// const url = value
-	// 	? `https://fileconnector.voxelgroup.net/inbox/${value}`
-	// 	: 'https://fileconnector.voxelgroup.net/inbox'
-
-	// const url = `https://fileconnector.voxelgroup.net/inbox/PDF_E310000000015.json`
-
-	// try {
-	// 	//Await Fetch
-	// 	const request = await fetch(url, {
-	// 		method: 'GET',
-	// 		mode: 'cors',
-	// 		credentials: 'include',
-	// 		headers: {
-	// 			'Content-Type': 'application/json',
-	// 			Authorization: 'Basic ' + btoa('bluemallrdtest:Suheh3-Kugoz6'),
-	// 		},
-	// 		'Access-Control-Allow-Origin': '*',
-	// 		'Access-Control-Allow-Credentials': true,
-	// 	})
-
-	// 	if (!request.ok) {
-	// 		throw new Error(`Response status: ${request.status}`)
-	// 	}
-
-	// 	const response = await request.text()
-	// 	console.log(response)
-	// 	res.send(response)
-	// } catch (error) {
-	// 	// Handle your error
-	// 	console.log(error)
-	// 	res.status(500).send(error.message)
-	// }
 }
 
 export { generate }
