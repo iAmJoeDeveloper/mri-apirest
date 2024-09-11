@@ -77,9 +77,17 @@ export const login = async (req, res) => {
 				return res.status(404).json({ status: false, errors: ['User does not exist'] })
 			}
 
-			const token = Jwt.sign({ id: info._id }, JWT_SECRET, {
-				expiresIn: JWT_EXPIRES,
-			})
+			const token = Jwt.sign(
+				{ id: info._id },
+				JWT_SECRET,
+				{
+					expiresIn: JWT_EXPIRES,
+				},
+				(err, token) => {
+					if (err) console.log(err, 'error con token')
+					// res.cookie('token', token)
+				}
+			)
 
 			const user = { id: info._id, name: info.username, email: info.email, token: token }
 

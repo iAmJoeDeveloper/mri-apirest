@@ -15,6 +15,7 @@ import { exentLinked } from './facturaComercial_modules/exentLinked'
 //Utils
 import { sanitizeCompanyName } from '../utils/sanitizeCompanyName'
 import { emptyTrim } from '../utils/emptyTrim'
+import { compareDates } from '../utils/compareDates'
 
 //BD
 import mongoose, { mongo } from 'mongoose'
@@ -390,7 +391,7 @@ const extraFields = async (invcnumber) => {
 	const query = `
 	SELECT TOP 1 invoice as invoiceref,
 	trandate as invoicerefdate
-	from cmledg  WHERE GOVINVC = 'B0100001970' and SRCCODE = 'CH'`
+	from cmledg  WHERE GOVINVC = '${invcnumber}' and SRCCODE = 'CH'`
 
 	const pool = await getConnection()
 	const fields = await pool.request().query(query)
@@ -418,17 +419,21 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 			const headerFactura = await getHeaders(item.ref)
 			const [productsFormated, grossamount] = await filterProducts(item.ref)
 			const [taxesFormated, totalAmount] = await formatTax(item.ref)
-			const fieldsnc = await extraFields('B0100001970')
-			//console.log(productsFormated)
-			// console.log(fieldsnc)
 
-			headerFactura.map((invoice) => {
+			//console.log(productsFormated)
+
+			headerFactura.map(async (invoice) => {
 				const invoiceDate = new Date(invoice.date)
 
 				const dueDate = new Date(invoiceDate)
 				dueDate.setDate(dueDate.getDate() + 7)
 
+				const fieldsnc = await extraFields(invoice.invoicencf)
+				// console.log(invoice.invoicencf)
+				const indicadornotacredito = compareDates(invoiceDate, fieldsnc.invoicerefdate)
+
 				const invoiceExpirationDate = new Date(invoice.ncfexpirationdate)
+
 				const template = {
 					_declaration: {
 						_attributes: {
@@ -510,7 +515,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 									DOM: {
 										_attributes: {
 											CodigoModificacion: invoice.codigomodificacion,
-											IndicadorNotaCredito: invoice.indicadornotacredito,
+											IndicadorNotaCredito: indicadornotacredito,
 										},
 									},
 								},
@@ -657,7 +662,7 @@ const getListOfInvoices = async (req, res) => {
 const filterProducts = async (invoiceNum, req, res) => {
 	const items = await getItems(invoiceNum)
 	const arrTaxesFilteredByParent = await filterTaxes(invoiceNum)
-	console.log(arrTaxesFilteredByParent)
+
 	let grossamount = 0
 
 	//Filtrar Productos
