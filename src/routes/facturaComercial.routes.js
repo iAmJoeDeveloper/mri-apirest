@@ -51,7 +51,6 @@ router.get('/consultInbox/:value?', async (req, res) => {
 		}
 
 		const response = await request.text()
-		console.log(response)
 		res.send(response)
 	} catch (error) {
 		// Handle your error
