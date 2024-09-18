@@ -89,7 +89,7 @@ const formatTax = async (invoiceNum, req, res) => {
 		const rate = item.rate
 
 		if (amounts[type] && amounts[type][rate] !== undefined) {
-			amounts[type][rate].amount += item.amount
+			amounts[type][rate].amount += Math.abs(item.amount)
 			amounts[type][rate].qualifier = item.qualifier // Assign qualifier
 		}
 
@@ -99,7 +99,8 @@ const formatTax = async (invoiceNum, req, res) => {
 			const rate = item.rate
 
 			if (amounts[type] && amounts[type][rate] !== undefined) {
-				if (item.parent == itemParent.tranid) amounts[type][rate].base += itemParent.amount
+				if (item.parent == itemParent.tranid)
+					amounts[type][rate].base += Math.abs(itemParent.amount)
 			}
 		})
 	})
@@ -120,7 +121,8 @@ const formatTax = async (invoiceNum, req, res) => {
 			const rate = '10'
 
 			if (amounts[type] && amounts[type][rate] !== undefined) {
-				if (item.tranid == itemParent.tranid) amounts[type][rate].base += itemParent.amount
+				if (item.tranid == itemParent.tranid)
+					amounts[type][rate].base += Math.abs(itemParent.amount)
 			}
 		})
 	})

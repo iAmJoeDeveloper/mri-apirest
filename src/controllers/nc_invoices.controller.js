@@ -529,20 +529,20 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								}),
 							},
 						],
-						DueDates: {
-							DueDate: {
-								_attributes: {
-									PaymentID: 'Venta a Credito',
-									Amount: (grossamount + totalAmount).toFixed(2),
-									Date:
-										dueDate.getFullYear() +
-										'-' +
-										(dueDate.getMonth() + 1).toString().padStart(2, '0') +
-										'-' +
-										dueDate.getDate().toString().padStart(2, '0'),
-								},
-							},
-						},
+						// DueDates: {
+						// 	DueDate: {
+						// 		_attributes: {
+						// 			PaymentID: 'Venta a Credito',
+						// 			Amount: (grossamount + totalAmount).toFixed(2),
+						// 			Date:
+						// 				dueDate.getFullYear() +
+						// 				'-' +
+						// 				(dueDate.getMonth() + 1).toString().padStart(2, '0') +
+						// 				'-' +
+						// 				dueDate.getDate().toString().padStart(2, '0'),
+						// 		},
+						// 	},
+						// },
 						TaxSummary: [
 							{
 								//Multiple
@@ -553,11 +553,11 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						],
 						TotalSummary: {
 							_attributes: {
-								GrossAmount: grossamount.toFixed(2),
+								GrossAmount: Math.abs(grossamount).toFixed(2),
 								Discounts: '',
-								SubTotal: grossamount.toFixed(2),
+								SubTotal: Math.abs(grossamount).toFixed(2),
 								Tax: totalAmount.toFixed(2),
-								Total: (grossamount + totalAmount).toFixed(2),
+								Total: Math.abs(grossamount + totalAmount).toFixed(2),
 							},
 						},
 					},
@@ -690,10 +690,10 @@ const filterProducts = async (invoiceNum, req, res) => {
 					Item: item.item.trim(),
 					Qty: '1',
 					MU: '',
-					UP: item.up,
+					UP: Math.abs(item.up),
 					CU: '',
-					Total: item.qty * item.up,
-					NetAmount: item.amount,
+					Total: Math.abs(item.qty * item.up),
+					NetAmount: Math.abs(item.amount),
 					SysLineType: item.syslinetype,
 				},
 				Discounts: {},
@@ -701,8 +701,8 @@ const filterProducts = async (invoiceNum, req, res) => {
 					{
 						Tax:
 							taxincluded === 'E'
-								? exentLinked(item.tranid, arrProductsFilteredByParent, item.amount)
-								: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+								? exentLinked(item.tranid, arrProductsFilteredByParent, Math.abs(item.amount))
+								: taxLinked(item.tranid, arrTaxesFilteredByParent, Math.abs(item.amount)),
 						// Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
 					},
 				],

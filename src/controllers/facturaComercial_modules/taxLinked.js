@@ -10,8 +10,8 @@ const taxLinked = (productTranid, arrTaxes, productBase) => {
 				_attributes: {
 					Type: compareTaxCode(tax.type2),
 					Rate: tax.rate,
-					Base: productBase,
-					Amount: tax.amount,
+					Base: Math.abs(productBase),
+					Amount: Math.abs(tax.amount),
 					Qualifier: compareQualifier(tax.qualifier),
 				},
 			})

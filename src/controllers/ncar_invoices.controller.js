@@ -227,83 +227,62 @@ export const getItems = async (invoiceNum, req, res) => {
     cif = (
 		SELECT PHONE
 		FROM ENTITY
-		WHERE ENTITYID IN (
-			SELECT ENTITYID
-			FROM BLDG
-			WHERE BLDGID = CMLEDG.BLDGID		
-		)
+		WHERE ENTITYID = ARLEDG.ENTITYID
 	)
     , company = (
 		SELECT NAME
         FROM ENTITY
-        WHERE ENTITYID IN (
-            SELECT ENTITYID 
-            FROM BLDG 
-            WHERE BLDGID = CMLEDG.BLDGID
-        )
-		
+        WHERE ENTITYID = ARLEDG.ENTITYID
     )
     , address = (
 		SELECT ADDR1
 		FROM ENTITY
-		 WHERE ENTITYID IN (
-            SELECT ENTITYID 
-            FROM BLDG 
-            WHERE BLDGID = CMLEDG.BLDGID
-        )
+		 WHERE ENTITYID = ARLEDG.ENTITYID
 	)
     , city = (
 		SELECT CITY
 		FROM ENTITY
-		WHERE ENTITYID IN (
-            SELECT ENTITYID 
-            FROM BLDG 
-            WHERE BLDGID = CMLEDG.BLDGID
-        )
+		WHERE ENTITYID = ARLEDG.ENTITYID
 	)
 	,country = 'DOM',
     type = 'Phone'
 	,number = (
-        SELECT PHONENO
-        FROM BLDG
-        WHERE BLDGID = CMLEDG.BLDGID
+        SELECT MAINPHONE
+        FROM ACCOUNT
+        WHERE ACCOUNTID = ARLEDG.ACCOUNTID
     )
 	,cliente_cif = (
 		SELECT RNC
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		FROM ACCOUNT
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
 	,company2 = (
-		SELECT DBA
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		SELECT FILEASNAME
+		FROM ACCOUNT
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-    ,address = (
+    ,address2 = (
 		SELECT ADDRESS
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
+		FROM ACCOUNTADDR
+		WHERE ACCOUNTID = ARLEDG.ACCOUNTID
 		)
-	,City = (
-		SELECT CITY
-		FROM LEAS
-		WHERE LEASID = CMLEDG.LEASID
-	)
+	,City = ''
 	,country = 'DOM',
     invoiceref = ''
     ,invoicerefdate = ''
 	,invoicencf = (
         SELECT TOP 1 descrptn
-        FROM cmledg
+        FROM arledg
         WHERE invoice = '${invoiceNum}'
         AND srccode = 'NC'
     )
 	,codigomodificacion = '3' 
     ,indicadornotacredito = '1' 
-	,inccat AS suppliersku
+	,arinccat AS suppliersku
 	,item = (
 		SELECT descrptn
-		FROM inch
-		WHERE inccat = cmledg.inccat
+		FROM arinch
+		WHERE arinccat = arledg.arinccat
 	)
 	,qty = '1'
 	,up = TRANAMT
@@ -311,28 +290,28 @@ export const getItems = async (invoiceNum, req, res) => {
 	,netamount = ''
 	,syslinetype = 'GenericServices'
 	,type2 = (
-		SELECT rtaxid
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		SELECT artaxid
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	)
 	,refdesc = (
         SELECT refdesc
         FROM rtax
-        WHERE inccat = cmledg.inccat
+        WHERE inccat = arledg.arinccat
     )
 	,base = 'X'
 	,rate = (
 		SELECT rtaxperc
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 	)
 	,amount = tranamt
 	,(
 		SELECT refdesc
-		FROM rtax
-		WHERE inccat = cmledg.inccat
+		FROM artax
+		WHERE arinccat = arledg.arinccat
 		) AS qualifier
-    FROM cmledg 
+    FROM arledg 
     WHERE invoice='${invoiceNum}' AND srccode='NC'`
 
 	const pool = await getConnection()
@@ -460,7 +439,7 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 							Reference: {
 								_attributes: {
 									// PORef: '-',
-									InvoiceRef: fieldsnc.invoiceref,
+									InvoiceRef: fieldsnc.invoiceref.trim(),
 									InvoiceRefDate:
 										fieldsnc.invoicerefdate.getFullYear() +
 										'-' +
@@ -487,20 +466,20 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								}),
 							},
 						],
-						DueDates: {
-							DueDate: {
-								_attributes: {
-									PaymentID: 'Venta a Credito',
-									Amount: (grossamount + totalAmount).toFixed(2),
-									Date:
-										dueDate.getFullYear() +
-										'-' +
-										(dueDate.getMonth() + 1).toString().padStart(2, '0') +
-										'-' +
-										dueDate.getDate().toString().padStart(2, '0'),
-								},
-							},
-						},
+						// DueDates: {
+						// 	DueDate: {
+						// 		_attributes: {
+						// 			PaymentID: 'Venta a Credito',
+						// 			Amount: (grossamount + totalAmount).toFixed(2),
+						// 			Date:
+						// 				dueDate.getFullYear() +
+						// 				'-' +
+						// 				(dueDate.getMonth() + 1).toString().padStart(2, '0') +
+						// 				'-' +
+						// 				dueDate.getDate().toString().padStart(2, '0'),
+						// 		},
+						// 	},
+						// },
 						TaxSummary: [
 							{
 								//Multiple
@@ -511,11 +490,11 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						],
 						TotalSummary: {
 							_attributes: {
-								GrossAmount: grossamount.toFixed(2),
+								GrossAmount: Math.abs(grossamount).toFixed(2),
 								Discounts: '',
-								SubTotal: grossamount.toFixed(2),
+								SubTotal: Math.abs(grossamount).toFixed(2),
 								Tax: totalAmount.toFixed(2),
-								Total: (grossamount + totalAmount).toFixed(2),
+								Total: Math.abs(grossamount + totalAmount).toFixed(2),
 							},
 						},
 					},
@@ -648,10 +627,10 @@ const filterProducts = async (invoiceNum, req, res) => {
 					Item: item.item.trim(),
 					Qty: '1',
 					MU: '',
-					UP: item.up,
+					UP: Math.abs(item.up),
 					CU: '',
-					Total: item.qty * item.up,
-					NetAmount: item.amount,
+					Total: Math.abs(item.qty * item.up),
+					NetAmount: Math.abs(item.amount),
 					SysLineType: item.syslinetype,
 				},
 				Discounts: {},
@@ -659,8 +638,8 @@ const filterProducts = async (invoiceNum, req, res) => {
 					{
 						Tax:
 							taxincluded === 'E'
-								? exentLinked(item.tranid, arrProductsFilteredByParent, item.amount)
-								: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
+								? exentLinked(item.tranid, arrProductsFilteredByParent, Math.abs(item.amount))
+								: taxLinked(item.tranid, arrTaxesFilteredByParent, Math.abs(item.amount)),
 						// Tax: taxLinked(item.tranid, arrTaxesFilteredByParent, item.amount),
 					},
 				],
