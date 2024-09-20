@@ -405,6 +405,9 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 				const dueDate = new Date(invoiceDate)
 				dueDate.setDate(dueDate.getDate() + 7)
 
+				// Tipo de factura
+				const tp = invoice.ncf.trim().substring(0, 3)
+
 				const invoiceExpirationDate = new Date(invoice.ncfexpirationdate)
 				const template = {
 					_declaration: {
@@ -420,7 +423,18 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 						GeneralData: {
 							_attributes: {
 								Ref: invoice.ref,
-								Type: 'FacturaComercial',
+								Type:
+									tp === 'E31'
+										? 'FacturaComercial'
+										: tp === 'E32'
+										? 'FacturaConsumo'
+										: tp === 'E34'
+										? 'FacturaAbono'
+										: tp === 'E44'
+										? 'RegimenEspecial'
+										: tp === 'E45'
+										? 'FacturaGubernamentalDOM'
+										: '',
 								Date:
 									invoiceDate.getFullYear() +
 									'-' +
@@ -430,14 +444,47 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 								Currency: invoice.currency,
 								TaxIncluded: 'false',
 								NCF: invoice.ncf.trim(),
-								NCFExpirationDate: '2025-12-31',
+								NCFExpirationDate:
+									tp === 'E31'
+										? '2025-12-31'
+										: tp === 'E32'
+										? ''
+										: tp === 'E34'
+										? '2025-12-31'
+										: tp === 'E44'
+										? '2025-12-31'
+										: tp === 'E45'
+										? '2025-12-31'
+										: '',
 								ExchangeRate: invoice.exchangerate ? invoice.exchangerate.toFixed(2) : '',
 							},
 							PublicAdministration: {
 								DOM: {
 									_attributes: {
-										TipoIngreso: invoice.tipoingreso,
-										TipoPago: invoice.tipopago,
+										TipoIngreso:
+											tp === 'E31'
+												? '2'
+												: tp === 'E32'
+												? '1'
+												: tp === 'E34'
+												? '1'
+												: tp === 'E44'
+												? '1'
+												: tp === 'E45'
+												? '1'
+												: '',
+										TipoPago:
+											tp === 'E31'
+												? '2'
+												: tp === 'E32'
+												? '1'
+												: tp === 'E34'
+												? '1'
+												: tp === 'E44'
+												? '1'
+												: tp === 'E45'
+												? '1'
+												: '',
 										LinesPerPrintedPage: '',
 									},
 								},
