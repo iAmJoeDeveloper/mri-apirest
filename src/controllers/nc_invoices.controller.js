@@ -402,7 +402,7 @@ const extraFields = async (invcnumber) => {
 export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 	//Crear folder
 	let timestamp = Date.now()
-	let dir = `NC - notaDeCredito-${timestamp}`
+	let dir = `NC CM - notaDeCredito-${timestamp}`
 	//ACTIVAR 1/2 IMPRESION DE FACTURAS
 	if (crearFactura) {
 		if (!fs.existsSync(dir)) {
@@ -606,9 +606,10 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
+	const { username } = req.params
 	// Send invoiceBox to package/create endpoint
 	try {
-		const response = await fetch('http://localhost:3000/package/create/NC', {
+		const response = await fetch(`http://localhost:3000/package/create/NC-CM/${username}`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

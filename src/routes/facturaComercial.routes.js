@@ -15,7 +15,7 @@ router.get('/facturas', getHeaders) // Out of using - It is been using inside co
 
 router.get('/createFactura/:datas', createInvoice) // Out of using - It is been using inside controller
 
-router.get('/facturas/sendInvoices', sendInvoices)
+router.get('/facturas/sendInvoices/:username?', sendInvoices)
 
 //Test API
 router.post('/show', (req, res) => {

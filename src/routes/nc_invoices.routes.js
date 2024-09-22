@@ -4,6 +4,6 @@ import { getBatchOfInvoices, sendInvoices } from '../controllers/nc_invoices.con
 const router = Router()
 
 router.get('/ncinvoices/:invoice1/:invoice2/:createInvoice?', getBatchOfInvoices)
-router.get('/ncinvoices/sendInvoices', sendInvoices)
+router.get('/ncinvoice/sendInvoices/:username?', sendInvoices)
 
 export default router

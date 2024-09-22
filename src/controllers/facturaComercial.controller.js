@@ -601,9 +601,11 @@ export const createInvoice = async (bathOfInvoices, crearFactura, req, res) => {
 
 //Send Invoices
 export const sendInvoices = async (req, res) => {
+	const username = req.params.username
+	console.log(username)
 	// Send invoiceBox to package/create endpoint
 	try {
-		const response = await fetch('http://localhost:3000/package/create/CM', {
+		const response = await fetch(`http://localhost:3000/package/create/CM/${username}`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

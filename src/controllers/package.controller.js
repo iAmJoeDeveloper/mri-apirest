@@ -7,6 +7,8 @@ import convert from 'xml-js'
 const createPackage = async (req, res) => {
 	const { invoiceBox } = req.body
 	const category = req.params.category
+	const username = req.params.username
+
 	console.log('CREAR PAQUETE')
 	console.log(invoiceBox)
 
@@ -30,6 +32,7 @@ const createPackage = async (req, res) => {
 				status: 'pending',
 				date: invoice.Transaction.GeneralData._attributes.Date,
 			})),
+			user: username,
 		}
 		//Testing
 		// console.log('Datos del paquete generados:', packageData)

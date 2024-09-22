@@ -6,7 +6,7 @@ const { getPackages, createPackage, getPackageById } = require('../controllers/p
 const router = Router()
 
 router.get('/packages', getPackages)
-router.post('/package/create/:category', createPackage)
+router.post('/package/create/:category/:username', createPackage)
 router.get('/package/checking/:id', getPackageById)
 
 // Delete record by id
