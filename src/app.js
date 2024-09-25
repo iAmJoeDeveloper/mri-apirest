@@ -8,10 +8,11 @@ import invoicesRoutes from './routes/invoices.routes'
 import facturaRoutes from './routes/facturaComercial.routes'
 import packageRoutes from './routes/packages.routes'
 import qrcodesRoutes from './routes/qrcodes.routes'
-import usersRoutes from './routes/Auth.routes'
+import authRoutes from './routes/Auth.routes'
 import arRoutes from './routes/ar_invoices.routes'
 import ncRoutes from './routes/nc_invoices.routes'
 import ncarRoutes from './routes/ncar_invoices.routes'
+import userRoutes from './routes/users.routes'
 
 import cookieParser from 'cookie-parser'
 
@@ -37,10 +38,11 @@ app.use(
 	facturaRoutes,
 	packageRoutes,
 	qrcodesRoutes,
-	usersRoutes,
+	authRoutes,
 	arRoutes,
 	ncRoutes,
-	ncarRoutes
+	ncarRoutes,
+	userRoutes
 )
 
 export default app

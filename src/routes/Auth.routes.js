@@ -6,12 +6,8 @@ import { loginSchema, registerSchema } from '../schemas/auth.schema.js'
 
 const router = Router()
 
-router.get('/users', (req, res) => {
-	res.send('Raíz de usuarios')
-})
-
 router.post('/login', validateSchema(loginSchema), login)
-router.post('/register', validateSchema(registerSchema), register)
+// router.post('/register', validateSchema(registerSchema), register)
 router.post('/logout', logout)
 
 router.get('/profile', authRequire, profile)
